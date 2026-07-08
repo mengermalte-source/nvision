@@ -11,17 +11,20 @@ from sqlalchemy.orm import sessionmaker, Session
 from datetime import date, datetime, timedelta
 import calendar
 import os
-from typing import List, Optional
-import hashlib
 from jose import JWTError, jwt
+from passlib.context import CryptContext
+import os
+from typing import List, Optional
 
 import models
 import schemas
 
 # Security Settings
-SECRET_KEY = "n-vision-very-secret-key"
+SECRET_KEY = os.getenv("SECRET_KEY", "n-vision-dev-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./n-vision.db"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
@@ -29,7 +32,35 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 models.Base.metadata.create_all(bind=engine)
 
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+
 app = FastAPI(title="N-VISION - Project & Employee Management System")
+
+# Security Middlewares
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In Produktion einschränken!
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response: Response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        # CSP - Sehr restriktiv, ggf. anpassen falls Inline-Scripts nötig sind
+        response.headers["Content-Security-Policy"] = "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline';"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
 templates = Jinja2Templates(directory="templates")
 
 # Cache busting for static files
@@ -44,10 +75,10 @@ templates.env.globals["static_url"] = static_url
 
 # --- Security Helpers ---
 def verify_password(plain_password, hashed_password):
-    return get_password_hash(plain_password) == hashed_password
+    return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+    return pwd_context.hash(password)
 
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -78,15 +109,21 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == username).first()
     return user
 
-def admin_required(user: models.User = Depends(get_current_user)):
-    if not user or user.role != models.UserRole.ADMIN:
+def login_required(user: models.User = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
+def admin_required(user: models.User = Depends(login_required)):
+    if user.role != models.UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     return user
 
 # Context Processor for templates
-def get_setting(db: Session, key: str, default: str = None):
-    setting = db.query(models.Setting).filter(models.Setting.key == key).first()
-    return setting.value if setting else default
 
 @app.middleware("http")
 async def add_global_data_to_request(request: Request, call_next):
@@ -94,8 +131,8 @@ async def add_global_data_to_request(request: Request, call_next):
     request.state.user = await get_current_user(request, db)
     
     # Zentrales Planungsjahr laden
-    configured_year = int(get_setting(db, "planning_year", str(date.today().year)))
-    request.state.planning_year = configured_year
+    # Planungjahr ist immer das aktuelle Jahr
+    request.state.planning_year = date.today().year
     
     # Jahre berechnen: Vorjahr, Aktuelles Jahr und zwei Folgejahre
     real_today_year = date.today().year
@@ -134,7 +171,7 @@ def login(response: RedirectResponse, username: str = Form(...), password: str =
     
     access_token = create_access_token(data={"sub": user.username})
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    response.set_cookie(key="access_token", value=access_token, httponly=True)
+    response.set_cookie(key="access_token", value=access_token, httponly=True, samesite="lax")
     return response
 
 @app.get("/logout")
@@ -189,7 +226,7 @@ def ui_heatmap(request: Request, year: Optional[int] = None, team_id: Optional[i
     )
 
 @app.get("/api/heatmap/detail/{employee_id}/{year}/{month}", response_model=schemas.CapacityDetail)
-def get_capacity_detail(employee_id: int, year: int, month: int, db: Session = Depends(get_db)):
+def get_capacity_detail(employee_id: int, year: int, month: int, db: Session = Depends(get_db), user: models.User = Depends(login_required)):
     employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
@@ -320,22 +357,6 @@ def ui_projects(request: Request, division: Optional[str] = None, show_completed
         }
     )
 
-@app.get("/ui/projects/overdue", response_class=HTMLResponse)
-def ui_projects_overdue(request: Request, db: Session = Depends(get_db)):
-    from datetime import date
-    projects = db.query(models.Project).filter(
-        models.Project.end_date < date.today(),
-        models.Project.status != models.ProjectStatus.COMPLETED
-    ).order_by(models.Project.end_date).all()
-    
-    return templates.TemplateResponse(
-        request=request, name="projects_overdue.html", context={
-            "projects": projects, 
-            "active_page": "projects_overdue",
-            "title": "Überfällige Projekte"
-        }
-    )
-
 @app.get("/ui/bookings", response_class=HTMLResponse)
 def ui_bookings(request: Request, project_id: Optional[int] = Query(None), db: Session = Depends(get_db)):
     if not request.state.user or request.state.user.role != models.UserRole.EMPLOYEE:
@@ -365,11 +386,20 @@ def ui_add_booking(
     hours: float = Form(...),
     description: Optional[str] = Form(None),
     request: Request = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(login_required)
 ):
-    user = request.state.user
-    if not user or user.role != models.UserRole.EMPLOYEE:
+    if user.role != models.UserRole.EMPLOYEE:
         raise HTTPException(status_code=403, detail="Only employees can book hours")
+    
+    # Check if employee is staffed on this project
+    staffing = db.query(models.Staffing).filter(
+        models.Staffing.project_id == project_id,
+        models.Staffing.employee_id == user.employee_id
+    ).first()
+    
+    if not staffing and user.role != models.UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="You can only book hours on projects you are staffed on")
     
     db_booking = models.Booking(
         employee_id=user.employee_id,
@@ -383,7 +413,7 @@ def ui_add_booking(
     return RedirectResponse(url="/ui/bookings", status_code=303)
 
 @app.get("/ui/projects/add", response_class=HTMLResponse)
-def ui_add_project_form(request: Request):
+def ui_add_project_form(request: Request, user: models.User = Depends(admin_required)):
     return templates.TemplateResponse(
         request=request, name="project_add.html", context={
             "active_page": "project_add"
@@ -408,7 +438,8 @@ def ui_add_project(
     pt_intern_pab: float = Form(0.0),
     pt_intern_planned: float = Form(0.0),
     pt_extern_planned: float = Form(0.0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(admin_required)
 ):
     db_project = models.Project(
         name=name,
@@ -433,7 +464,7 @@ def ui_add_project(
     return RedirectResponse(url="/ui/projects", status_code=303)
 
 @app.get("/ui/projects/{project_id}/edit", response_class=HTMLResponse)
-def ui_edit_project_form(request: Request, project_id: int, db: Session = Depends(get_db)):
+def ui_edit_project_form(request: Request, project_id: int, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -463,7 +494,8 @@ def ui_edit_project(
     pt_intern_pab: float = Form(0.0),
     pt_intern_planned: float = Form(0.0),
     pt_extern_planned: float = Form(0.0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(admin_required)
 ):
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project:
@@ -520,7 +552,7 @@ async def ui_reorder_projects(project_ids: list[int] = Body(...), db: Session = 
     return {"status": "ok"}
 
 @app.get("/ui/projects/{project_id}", response_class=HTMLResponse)
-def ui_project_detail(request: Request, project_id: int, db: Session = Depends(get_db)):
+def ui_project_detail(request: Request, project_id: int, db: Session = Depends(get_db), user: models.User = Depends(login_required)):
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -541,7 +573,8 @@ def ui_add_milestone(
     name: str = Form(...),
     date: date = Form(...),
     description: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(admin_required)
 ):
     db_milestone = models.Milestone(
         project_id=project_id,
@@ -554,7 +587,7 @@ def ui_add_milestone(
     return RedirectResponse(url=f"/ui/projects/{project_id}", status_code=303)
 
 @app.post("/ui/projects/{project_id}/milestones/{milestone_id}/delete")
-def ui_delete_milestone(project_id: int, milestone_id: int, db: Session = Depends(get_db)):
+def ui_delete_milestone(project_id: int, milestone_id: int, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
     milestone = db.query(models.Milestone).filter(models.Milestone.id == milestone_id).first()
     if milestone:
         db.delete(milestone)
@@ -580,7 +613,8 @@ def ui_add_employee(
     type: models.ResourceType = Form(...),
     weekly_hours: float = Form(40.0),
     team_id: Optional[int] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(admin_required)
 ):
     db_emp = models.Employee(name=name, type=type, weekly_hours=weekly_hours, team_id=team_id, employment_start=date.today())
     db.add(db_emp)
@@ -588,7 +622,7 @@ def ui_add_employee(
     return RedirectResponse(url="/ui/employees", status_code=303)
 
 @app.get("/ui/employees/{employee_id}/plan", response_class=HTMLResponse)
-def ui_employee_plan(request: Request, employee_id: int, db: Session = Depends(get_db)):
+def ui_employee_plan(request: Request, employee_id: int, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
     employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
@@ -604,7 +638,8 @@ def ui_update_employee_plan(
     employee_id: int,
     annual_hours_target: float = Form(...),
     service_capacity_percent: float = Form(0.0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(admin_required)
 ):
     employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
     if not employee:
@@ -628,7 +663,7 @@ def ui_update_employee_plan(
     return RedirectResponse(url="/ui/employees", status_code=303)
 
 @app.get("/ui/staffing/add", response_class=HTMLResponse)
-def ui_staffing_add_form(request: Request, project_id: int, db: Session = Depends(get_db)):
+def ui_staffing_add_form(request: Request, project_id: int, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     employees = db.query(models.Employee).all()
     teams = db.query(models.Team).all()
@@ -672,7 +707,8 @@ def ui_add_staffing(
     start_date: date = Form(...),
     end_date: date = Form(...),
     capacity_fte: float = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(admin_required)
 ):
     db_staffing = models.Staffing(
         project_id=project_id, 
@@ -688,7 +724,8 @@ def ui_add_staffing(
 @app.post("/ui/staffing/bulk_add")
 async def ui_bulk_add_staffing(
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(admin_required)
 ):
     form_data = await request.form()
     project_id = int(form_data.get("project_id"))
@@ -718,11 +755,11 @@ async def ui_bulk_add_staffing(
 
 # API Endpoints
 @app.get("/teams/", response_model=List[schemas.Team])
-def get_teams(db: Session = Depends(get_db)):
+def get_teams(db: Session = Depends(get_db), user: models.User = Depends(login_required)):
     return db.query(models.Team).all()
 
 @app.post("/teams/", response_model=schemas.Team)
-def create_team(team: schemas.TeamCreate, db: Session = Depends(get_db)):
+def create_team(team: schemas.TeamCreate, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
     db_team = models.Team(name=team.name)
     db.add(db_team)
     db.commit()
@@ -730,11 +767,11 @@ def create_team(team: schemas.TeamCreate, db: Session = Depends(get_db)):
     return db_team
 
 @app.get("/roles/", response_model=List[schemas.Role])
-def get_roles(db: Session = Depends(get_db)):
+def get_roles(db: Session = Depends(get_db), user: models.User = Depends(login_required)):
     return db.query(models.Role).all()
 
 @app.post("/roles/", response_model=schemas.Role)
-def create_role(role: schemas.RoleCreate, db: Session = Depends(get_db)):
+def create_role(role: schemas.RoleCreate, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
     db_role = models.Role(name=role.name)
     db.add(db_role)
     db.commit()
@@ -742,11 +779,11 @@ def create_role(role: schemas.RoleCreate, db: Session = Depends(get_db)):
     return db_role
 
 @app.get("/employees/", response_model=List[schemas.Employee])
-def get_employees(db: Session = Depends(get_db)):
+def get_employees(db: Session = Depends(get_db), user: models.User = Depends(login_required)):
     return db.query(models.Employee).all()
 
 @app.post("/employees/", response_model=schemas.Employee)
-def create_employee(employee: schemas.EmployeeCreate, db: Session = Depends(get_db)):
+def create_employee(employee: schemas.EmployeeCreate, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
     db_employee = models.Employee(**employee.model_dump())
     db.add(db_employee)
     db.commit()
@@ -754,11 +791,11 @@ def create_employee(employee: schemas.EmployeeCreate, db: Session = Depends(get_
     return db_employee
 
 @app.get("/projects/", response_model=List[schemas.Project])
-def get_projects(db: Session = Depends(get_db)):
+def get_projects(db: Session = Depends(get_db), user: models.User = Depends(login_required)):
     return db.query(models.Project).all()
 
 @app.post("/projects/", response_model=schemas.Project)
-def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)):
+def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
     db_project = models.Project(**project.model_dump())
     db.add(db_project)
     db.commit()
@@ -766,35 +803,15 @@ def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)
     return db_project
 
 @app.get("/staffings/", response_model=List[schemas.Staffing])
-def get_staffings(project_id: Optional[int] = None, db: Session = Depends(get_db)):
+def get_staffings(project_id: Optional[int] = None, db: Session = Depends(get_db), user: models.User = Depends(login_required)):
     query = db.query(models.Staffing)
     if project_id:
         query = query.filter(models.Staffing.project_id == project_id)
     return query.all()
 
-@app.get("/ui/settings", response_class=HTMLResponse)
-def ui_settings(request: Request, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
-    current_year = int(get_setting(db, "planning_year", str(date.today().year)))
-    return templates.TemplateResponse(
-        request=request, name="settings.html", context={
-            "active_page": "settings",
-            "current_planning_year": current_year
-        }
-    )
-
-@app.post("/ui/settings")
-def ui_save_settings(planning_year: str = Form(...), db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
-    setting = db.query(models.Setting).filter(models.Setting.key == "planning_year").first()
-    if not setting:
-        setting = models.Setting(key="planning_year", value=planning_year)
-        db.add(setting)
-    else:
-        setting.value = planning_year
-    db.commit()
-    return RedirectResponse(url="/ui/settings", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.post("/seed/")
-def seed_database(db: Session = Depends(get_db)):
+def seed_database(db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
     # 1. Clear existing data
     db.query(models.Milestone).delete()
     db.query(models.Booking).delete()
@@ -1220,8 +1237,38 @@ P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Au
     # Wenn der Request von einem Browser kommt (Redirect erwünscht)
     return RedirectResponse(url="/?year=2026&month=7", status_code=303)
 
+@app.get("/bookings/", response_model=List[schemas.Booking])
+def get_api_bookings(employee_id: Optional[int] = None, db: Session = Depends(get_db), user: models.User = Depends(login_required)):
+    query = db.query(models.Booking)
+    if user.role != models.UserRole.ADMIN:
+        # Employees can only see their own bookings
+        query = query.filter(models.Booking.employee_id == user.employee_id)
+    elif employee_id:
+        query = query.filter(models.Booking.employee_id == employee_id)
+    return query.all()
+
+@app.post("/bookings/", response_model=schemas.Booking)
+def create_api_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db), user: models.User = Depends(login_required)):
+    if user.role != models.UserRole.ADMIN and booking.employee_id != user.employee_id:
+        raise HTTPException(status_code=403, detail="You can only create bookings for yourself")
+    
+    # Check staffing for non-admins
+    if user.role != models.UserRole.ADMIN:
+        staffing = db.query(models.Staffing).filter(
+            models.Staffing.project_id == booking.project_id,
+            models.Staffing.employee_id == user.employee_id
+        ).first()
+        if not staffing:
+            raise HTTPException(status_code=403, detail="You can only book hours on projects you are staffed on")
+
+    db_booking = models.Booking(**booking.model_dump())
+    db.add(db_booking)
+    db.commit()
+    db.refresh(db_booking)
+    return db_booking
+
 @app.post("/staffings/", response_model=schemas.Staffing)
-def create_staffing(staffing: schemas.StaffingCreate, db: Session = Depends(get_db)):
+def create_staffing(staffing: schemas.StaffingCreate, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
     # Basic validation: check if project and resource exist
     project = db.query(models.Project).filter(models.Project.id == staffing.project_id).first()
     employee = db.query(models.Employee).filter(models.Employee.id == staffing.employee_id).first()
@@ -1235,7 +1282,7 @@ def create_staffing(staffing: schemas.StaffingCreate, db: Session = Depends(get_
     return db_staffing
 
 @app.get("/analysis/heatmap/", response_model=List[schemas.CapacityHeatmapEntry])
-def get_heatmap(year: int, month: int, db: Session = Depends(get_db)):
+def get_heatmap(year: int, month: int, db: Session = Depends(get_db), user: models.User = Depends(login_required)):
     employees = db.query(models.Employee).all()
     results = []
     
@@ -1279,7 +1326,7 @@ def get_heatmap(year: int, month: int, db: Session = Depends(get_db)):
     return results
 
 @app.get("/ui/reports", response_class=HTMLResponse)
-def ui_reports(request: Request, db: Session = Depends(get_db)):
+def ui_reports(request: Request, db: Session = Depends(get_db), user: models.User = Depends(login_required)):
     if not request.state.user:
         return RedirectResponse(url="/login")
     # 1. Projekt-Status-Verteilung
@@ -1290,9 +1337,19 @@ def ui_reports(request: Request, db: Session = Depends(get_db)):
     all_projects = db.query(models.Project).filter(models.Project.status != models.ProjectStatus.COMPLETED).all()
     critical_projects = []
     sleeper_projects = []
+    overdue_projects = []
     
     today = date.today()
     for p in all_projects:
+        # Überfällige Projekte (Enddatum in Vergangenheit und nicht abgeschlossen)
+        if p.end_date < today:
+            overdue_projects.append({
+                "id": p.id,
+                "name": p.name,
+                "end_date": p.end_date,
+                "status": p.status
+            })
+
         # Berechne zeitlichen Fortschritt
         total_days = (p.end_date - p.start_date).days
         if total_days > 0:
@@ -1371,7 +1428,8 @@ def ui_reports(request: Request, db: Session = Depends(get_db)):
         "Ressourcen-Auslastung": "Trend der geplanten Auslastung (Staffing) über die nächsten 6 Monate im Verhältnis zur Gesamtkapazität.",
         "Projekte nach Bereich": "Anzahl der Projekte gruppiert nach Fachbereichen (IT, Netzgesellschaft, etc.).",
         "Top 5 Kritische Projekte": "Liste der Projekte mit der höchsten negativen Abweichung zwischen Arbeitsfortschritt und Zeitverlauf.",
-        "Schläferprojekte": "Projekte, die laut Startdatum bereits laufen sollten, aber noch keine Zeitbuchungen aufweisen."
+        "Schläferprojekte": "Projekte, die laut Startdatum bereits laufen sollten, aber noch keine Zeitbuchungen aufweisen.",
+        "Überfällige Projekte": "Projekte, deren geplantes Enddatum in der Vergangenheit liegt, aber noch nicht abgeschlossen sind."
     }
 
     context = {
@@ -1381,6 +1439,7 @@ def ui_reports(request: Request, db: Session = Depends(get_db)):
         "status_data": status_data,
         "critical_projects": critical_projects,
         "sleeper_projects": sleeper_projects,
+        "overdue_projects": sorted(overdue_projects, key=lambda x: x["end_date"]),
         "months": months,
         "utilization": utilization,
         "division_data": division_data,

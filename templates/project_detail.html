@@ -2,13 +2,13 @@
 {% set title = "Projekt-Details" %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; gap: 1rem;">
+<div class="project-table-header" style="margin-bottom: 2rem;">
     <div>
         <nav style="margin-bottom: 0.5rem;">
             <a href="/ui/projects" style="text-decoration: none; color: var(--text-muted); font-size: 0.875rem;">&larr; Projekte</a>
         </nav>
         <h1 style="margin: 0; line-height: 1.1;">{{ project.name }}</h1>
-        <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: center;">
+        <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
             <span class="badge {{ 'badge-it' if project.division == 'IT' else 'badge-netz' if project.division == 'Netzgesellschaft' else 'badge-vertrieb' if project.division == 'Vertrieb' else 'badge-kraftwerk' if project.division == 'Kraftwerk' else 'badge-default' }}">
                 {{ project.division if project.division else 'Kein Bereich' }}
             </span>
@@ -26,7 +26,7 @@
             <span class="badge status-{{ project.status.value.replace('_', '-') }}">{{ 'PLANUNG' if project.status.value == 'planning' else 'AKTIV' if project.status.value == 'active' else 'ON HOLD' if project.status.value == 'on_hold' else 'ABGESCHLOSSEN' if project.status.value == 'completed' else project.status.value }}</span>
         </div>
     </div>
-    <div class="action-buttons" style="display: flex; gap: 0.75rem;">
+    <div class="action-buttons">
         {% if request.state.user and request.state.user.role.value == 'admin' %}
         <a href="/ui/projects/{{ project.id }}/edit" class="btn btn-primary">Bearbeiten</a>
         {% endif %}
@@ -104,7 +104,7 @@
     </div>
 
     <!-- Beschreibung & Nutzen Grid -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+    <div class="project-detail-main-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column;">
             <div class="section-header">
                 <h2>Projektbeschreibung</h2>

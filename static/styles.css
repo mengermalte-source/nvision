@@ -829,11 +829,59 @@ body.sidebar-collapsed .main-wrapper {
     border: 1px solid var(--border-color);
 }
 
+@media (max-width: 1200px) {
+    .hide-on-laptop {
+        display: none !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    .hide-on-tablet {
+        display: none !important;
+    }
+    
+    .responsible-info {
+        flex-direction: column;
+        gap: 0.1rem;
+    }
+}
+
 /* Responsive */
+@media (max-width: 992px) {
+    .sidebar {
+        width: var(--sidebar-collapsed-width);
+    }
+    
+    .sidebar .nav-label,
+    .sidebar a span:not(.nav-icon) {
+        display: none;
+    }
+    
+    .sidebar .sidebar-header .brand-title {
+        font-size: 0.6rem;
+    }
+    
+    .sidebar .sidebar-nav a {
+        padding: 0.75rem;
+        justify-content: center;
+        margin-right: 0;
+        border-radius: 0;
+    }
+    
+    .sidebar .nav-icon {
+        margin-right: 0;
+    }
+    
+    .main-wrapper {
+        margin-left: var(--sidebar-collapsed-width);
+    }
+}
+
 @media (max-width: 768px) {
     .sidebar {
         transform: translateX(-100%);
         box-shadow: 10px 0 15px -3px rgba(0, 0, 0, 0.1);
+        width: 280px; /* Etwas breiter auf Mobile */
     }
 
     .sidebar.active {
@@ -841,7 +889,7 @@ body.sidebar-collapsed .main-wrapper {
     }
 
     .main-wrapper {
-        margin-left: 0;
+        margin-left: 0 !important;
     }
 
     .menu-toggle {
@@ -849,7 +897,7 @@ body.sidebar-collapsed .main-wrapper {
     }
 
     .sidebar.collapsed {
-        width: var(--sidebar-width);
+        width: 280px; /* Ignoriere Collapsed-State auf Mobile */
     }
 
     body.sidebar-collapsed .main-wrapper {
@@ -861,6 +909,104 @@ body.sidebar-collapsed .main-wrapper {
     }
 
     .content-area {
+        padding: 1rem 0.75rem;
+    }
+
+    .page-title {
+        font-size: 1.1rem;
+    }
+
+    /* Stack Header Content */
+    .project-table-header, 
+    .card > div[style*="display: flex; justify-content: space-between"] {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1rem;
+    }
+
+    /* Mobile Table Transformation */
+    .modern-table thead {
+        display: none;
+    }
+
+    .modern-table, .modern-table tbody, .modern-table tr, .modern-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .modern-table tr {
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 0.5rem;
+        background: var(--white);
+    }
+
+    .modern-table td {
+        text-align: right;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modern-table td:last-child {
+        border-bottom: none;
+    }
+
+    .modern-table td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        text-align: left;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+    }
+
+    /* Special case for name/link column */
+    .modern-table td:has(.project-name-link), 
+    .modern-table td:nth-child(2) {
+        text-align: left;
+        flex-direction: column;
+        align-items: flex-start;
+        background: #f8fafc;
+        margin: -0.5rem -0.5rem 0.5rem -0.5rem;
         padding: 1rem;
+        border-radius: var(--radius-md) var(--radius-md) 0 0;
+        border-bottom: 1px solid var(--border-color);
+        display: block !important; /* Sicherstellen, dass es auf Mobile block ist */
+    }
+
+    .modern-table td:has(.project-name-link)::before,
+    .modern-table td:nth-child(2)::before {
+        display: none;
+    }
+
+    /* Tabs scrollable */
+    .tabs > div {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    
+    .tabs div:first-child {
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tab-item {
+        white-space: nowrap;
+    }
+
+    /* Heatmap adjustments */
+    .heatmap-legend {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .project-detail-main-grid {
+        grid-template-columns: 1fr !important;
     }
 }

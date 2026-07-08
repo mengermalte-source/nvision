@@ -47,24 +47,24 @@
                     {% if request.state.user and request.state.user.role.value == 'admin' %}
                     <th style="width: 40px;"></th>
                     {% endif %}
-                    <th>Projekt / Details</th>
-                    <th>Prio</th>
-                    <th>Status</th>
-                    <th>Verantwortlich</th>
-                    <th>Zeitraum</th>
-                    <th>Fortschritt</th>
-                    <th style="text-align: right;">Aktionen</th>
+                    <th data-label="Projekt">Projekt / Details</th>
+                    <th data-label="Prio" style="width: 60px;">Prio</th>
+                    <th data-label="Status" style="width: 120px;">Status</th>
+                    <th data-label="Verantwortlich" class="hide-on-tablet">Verantwortlich</th>
+                    <th data-label="Zeitraum" class="hide-on-laptop">Zeitraum</th>
+                    <th data-label="Fortschritt" style="width: 160px;">Fortschritt</th>
+                    <th style="text-align: right;" data-label="Aktionen">Aktionen</th>
                 </tr>
             </thead>
             <tbody id="project-table-body">
                 {% for p in projects|sort(attribute='priority') %}
                 <tr data-id="{{ p.id }}" class="{% if request.state.user and request.state.user.role.value == 'admin' %}draggable-row{% endif %}">
                     {% if request.state.user and request.state.user.role.value == 'admin' %}
-                    <td class="drag-handle" style="cursor: grab; color: var(--text-muted); text-align: center;">
+                    <td class="drag-handle" style="cursor: grab; color: var(--text-muted); text-align: center;" data-label="Sort">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
                     </td>
                     {% endif %}
-                    <td>
+                    <td data-label="Projekt">
                         <div style="display: flex; flex-direction: column;">
                             <a href="/ui/projects/{{ p.id }}" class="project-name-link">{{ p.name }}</a>
                             <div style="margin-top: 0.35rem; display: flex; align-items: center; gap: 0.5rem;">
@@ -86,7 +86,7 @@
                             </div>
                         </div>
                     </td>
-                    <td>
+                    <td data-label="Prio">
                         {% if p.priority == 1 %}
                             <span class="badge" style="background-color: #ef4444; color: white;">P1</span>
                         {% elif p.priority == 2 %}
@@ -99,7 +99,7 @@
                             <span class="badge badge-default">P{{ p.priority }}</span>
                         {% endif %}
                     </td>
-                    <td>
+                    <td data-label="Status">
                         <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                             {% if request.state.user and request.state.user.role.value == 'admin' %}
                             <form action="/ui/projects/{{ p.id }}/status" method="post" id="status-form-{{ p.id }}">
@@ -117,13 +117,13 @@
                             {% endif %}
                         </div>
                     </td>
-                    <td>
+                    <td data-label="Verantwortlich" class="hide-on-tablet">
                         <div class="responsible-info">
                             <span class="responsible-label">IT:</span> <span>{{ p.responsible_it if p.responsible_it else '-' }}</span>
                             <span class="responsible-label">FB:</span> <span>{{ p.responsible_fb if p.responsible_fb else '-' }}</span>
                         </div>
                     </td>
-                    <td>
+                    <td data-label="Zeitraum" class="hide-on-laptop">
                         <div style="font-size: 0.85rem; line-height: 1.4;">
                             <div style="display: flex; align-items: center; gap: 0.4rem;">
                                 <span style="width: 16px; display: inline-block; color: var(--success);">●</span>
@@ -135,7 +135,7 @@
                             </div>
                         </div>
                     </td>
-                    <td style="min-width: 140px;">
+                    <td style="min-width: 140px;" data-label="Fortschritt">
                         <div class="progress-bar-container">
                             {% if p.progress > 100 %}
                             <div class="progress-bar-fill overbooked" style="width: 0%;" data-progress="100"></div>
@@ -154,7 +154,7 @@
                             <small style="color: var(--text-muted); font-size: 0.7rem;">gebucht</small>
                         </div>
                     </td>
-                    <td style="text-align: right;">
+                    <td style="text-align: right;" data-label="Aktionen">
                         <div class="action-buttons" style="justify-content: flex-end;">
                             {% if request.state.user and request.state.user.role.value == 'admin' %}
                             <a href="/ui/projects/{{ p.id }}/edit" class="btn btn-small btn-edit" title="Bearbeiten">Edit</a>

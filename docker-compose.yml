@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./data:/app/data
+      - ./n-vision.db:/app/n-vision.db
+      - ./prms.db:/app/prms.db
+    environment:
+      - SECRET_KEY=your-secret-key-here
+      - DATABASE_URL=sqlite:///./n-vision.db
+    restart: always
+
+volumes:
+  data:

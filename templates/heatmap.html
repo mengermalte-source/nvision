@@ -3,9 +3,9 @@
 
 {% block content %}
 <div class="card heatmap-container">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div class="project-table-header">
         <div>
-            <h2 style="margin: 0; font-size: 1.5rem;">Kapazitäts-Heatmap</h2>
+            <h2>Kapazitäts-Heatmap</h2>
             <p style="margin: 0.25rem 0 0; color: var(--text-muted); font-size: 0.9rem;">Übersicht der freien Kapazitäten pro Mitarbeiter in FTE für {{ year }}</p>
         </div>
         <div class="action-buttons">
@@ -27,35 +27,35 @@
         </div>
     </div>
 
-<div class="modern-table-wrapper" style="border: none; overflow-x: auto;">
+<div class="modern-table-wrapper" style="border: none;">
         <table class="heatmap-table" style="width: 100%; border-collapse: separate; border-spacing: 6px;">
             <thead>
-                <tr style="display: table-row;">
-                    <th style="background: transparent; border: none; text-align: left; padding-left: 0; width: 220px; display: table-cell; color: var(--text-muted); font-weight: 600;">Mitarbeiter</th>
-                    <th style="background: transparent; border: none; width: 50px; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">FTE</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Jan</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Feb</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Mär</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Apr</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Mai</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Jun</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Jul</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Aug</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Sep</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Okt</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Nov</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Dez</th>
+                <tr>
+                    <th style="background: transparent; border: none; text-align: left; padding-left: 0; width: 220px; color: var(--text-muted); font-weight: 600;">Mitarbeiter</th>
+                    <th style="background: transparent; border: none; width: 50px; text-align: center; color: var(--text-muted); font-weight: 600;">FTE</th>
+                    <th style="background: transparent; border: none; text-align: center; color: var(--text-muted); font-weight: 600;">Jan</th>
+                    <th style="background: transparent; border: none; text-align: center; color: var(--text-muted); font-weight: 600;">Feb</th>
+                    <th style="background: transparent; border: none; text-align: center; color: var(--text-muted); font-weight: 600;">Mär</th>
+                    <th style="background: transparent; border: none; text-align: center; color: var(--text-muted); font-weight: 600;">Apr</th>
+                    <th style="background: transparent; border: none; text-align: center; color: var(--text-muted); font-weight: 600;">Mai</th>
+                    <th style="background: transparent; border: none; text-align: center; color: var(--text-muted); font-weight: 600;">Jun</th>
+                    <th style="background: transparent; border: none; text-align: center; color: var(--text-muted); font-weight: 600;">Jul</th>
+                    <th style="background: transparent; border: none; text-align: center; color: var(--text-muted); font-weight: 600;">Aug</th>
+                    <th style="background: transparent; border: none; text-align: center; color: var(--text-muted); font-weight: 600;">Sep</th>
+                    <th style="background: transparent; border: none; text-align: center; color: var(--text-muted); font-weight: 600;">Okt</th>
+                    <th style="background: transparent; border: none; text-align: center; color: var(--text-muted); font-weight: 600;">Nov</th>
+                    <th style="background: transparent; border: none; text-align: center; color: var(--text-muted); font-weight: 600;">Dez</th>
                 </tr>
             </thead>
             <tbody>
                 {% for entry in heatmap %}
-                <tr style="display: table-row;">
-                    <td style="padding: 0.75rem 0; vertical-align: middle; display: table-cell; width: 220px;">
+                <tr>
+                    <td style="padding: 0.75rem 0; vertical-align: middle; width: 220px;">
                         <div style="font-weight: 600; color: var(--primary-dark); font-size: 0.95rem;">
                             <a href="/ui/employees/{{ entry.employee_id }}/plan" style="color: inherit; text-decoration: none;">{{ entry.employee_name }}</a>
                         </div>
                     </td>
-                    <td style="text-align: center; color: var(--text-muted); font-size: 0.8rem; vertical-align: middle; display: table-cell; width: 50px;">{{ "%.1f"|format(entry.total_capacity_fte) }}</td>
+                    <td style="text-align: center; color: var(--text-muted); font-size: 0.8rem; vertical-align: middle; width: 50px;">{{ "%.1f"|format(entry.total_capacity_fte) }}</td>
                     {% for m in entry.months %}
                     <td class="heatmap-cell cell-{{ m.status }}" 
                         data-employee="{{ entry.employee_id }}"
@@ -63,7 +63,7 @@
                         data-month="{{ m.month }}"
                         onclick="showDetail(this.getAttribute('data-employee'), this.getAttribute('data-year'), this.getAttribute('data-month'))"
                         title="Frei: {{ '%.2f'|format(m.free_capacity_fte) }} FTE"
-                        style="vertical-align: middle; display: table-cell;">
+                        style="vertical-align: middle;">
                         {{ "%.1f"|format(m.free_capacity_fte) }}
                     </td>
                     {% endfor %}

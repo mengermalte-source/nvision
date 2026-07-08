@@ -19,6 +19,10 @@
             <div class="stat-value">{{ critical_projects|length }}</div>
             <div class="stat-label">Kritische Projekte <span class="info-icon">ⓘ</span></div>
         </div>
+        <div class="stat-card" onclick="showReportDefinition('Überfällige Projekte')">
+            <div class="stat-value">{{ overdue_projects|length }}</div>
+            <div class="stat-label">Überfällige Projekte <span class="info-icon">ⓘ</span></div>
+        </div>
         <div class="stat-card" onclick="showReportDefinition('Schläferprojekte')">
             <div class="stat-value">{{ sleeper_projects|length }}</div>
             <div class="stat-label">Schläferprojekte <span class="info-icon">ⓘ</span></div>
@@ -57,6 +61,25 @@
                 {% endfor %}
                 {% if not sleeper_projects %}
                 <div class="stat-label" style="text-align: center; padding: 2rem;">Keine Schläferprojekte aktuell.</div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="chart-container card" onclick="showReportDefinition('Überfällige Projekte')">
+            <h3>Überfällige Projekte <span class="info-icon">ⓘ</span></h3>
+            <div class="top-list">
+                {% for p in overdue_projects %}
+                <div class="top-list-item">
+                    <div style="display: flex; flex-direction: column;">
+                        <a href="/ui/projects/{{ p.id }}" class="item-name" style="text-decoration: none; color: inherit;">{{ p.name }}</a>
+                        <small style="color: var(--danger);">Geplant bis: {{ p.end_date.strftime('%d.%m.%Y') }}</small>
+                    </div>
+                    <span class="badge status-{{ p.status.value.replace('_', '-') }}" style="height: fit-content; margin-top: auto; margin-bottom: auto;">
+                        {{ 'PLANUNG' if p.status.value == 'planning' else 'AKTIV' if p.status.value == 'active' else 'ON HOLD' if p.status.value == 'on_hold' else 'ABGESCHLOSSEN' if p.status.value == 'completed' else p.status.value }}
+                    </span>
+                </div>
+                {% endfor %}
+                {% if not overdue_projects %}
+                <div class="stat-label" style="text-align: center; padding: 2rem;">Alles im Plan! Keine überfälligen Projekte.</div>
                 {% endif %}
             </div>
         </div>
