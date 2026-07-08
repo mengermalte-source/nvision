@@ -1,0 +1,246 @@
+/* PRMS Custom Styles - Inspired by Montessori App */
+:root {
+    --primary-color: #0b6b4a;
+    --primary-hover: #085339;
+    --secondary-color: #90bd1f;
+    --bg-color: #f5f8f1;
+    --text-color: #0f5132;
+    --sidebar-width: 280px;
+    --white: #ffffff;
+    --danger: #d9534f;
+    --warning: #f0ad4e;
+    --success: #5cb85c;
+    --info: #5bc0de;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-color);
+    color: var(--text-color);
+}
+
+/* Layout */
+.app-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--white);
+    border-right: 3px solid var(--secondary-color);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+}
+
+.sidebar-header {
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid #e9ecef;
+    text-align: center;
+}
+
+.brand-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 1rem 0;
+}
+
+.nav-group {
+    padding: 0 1rem 1.5rem;
+}
+
+.nav-label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+    padding-left: 0.5rem;
+    font-weight: 700;
+}
+
+.sidebar-nav a {
+    display: flex;
+    align-items: center;
+    padding: 0.8rem 1.25rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    border-radius: 0 50px 50px 0;
+    margin-right: 1rem;
+    transition: all 0.2s ease;
+}
+
+.sidebar-nav a:hover {
+    background: #eef2e6;
+}
+
+.sidebar-nav a.active {
+    background: var(--primary-color);
+    color: var(--white);
+}
+
+.main-wrapper {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+}
+
+.top-bar {
+    background: var(--white);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.page-title {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.content-area {
+    padding: 2rem;
+    flex: 1;
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background-color: var(--white);
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(11, 107, 74, 0.1);
+}
+
+.card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border: 1px solid #eef2e6;
+}
+
+/* Modal / Dialog */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+th, td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+}
+
+th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+}
+
+/* Heatmap specific */
+.heatmap-cell {
+    text-align: center;
+    font-weight: bold;
+}
+
+.cell-green { background-color: #d4edda; color: #155724; }
+.cell-yellow { background-color: #fff3cd; color: #856404; }
+.cell-red { background-color: #f8d7da; color: #721c24; }
+
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Division Tags */
+.badge-it { background-color: #007bff; color: white; }
+.badge-netz { background-color: #6610f2; color: white; }
+.badge-vertrieb { background-color: #e83e8c; color: white; }
+.badge-kraftwerk { background-color: #fd7e14; color: white; }
+.badge-default { background-color: #e9ecef; color: #495057; }
+
+/* Responsive */
+@media (max-width: 992px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .sidebar.active {
+        transform: translateX(0);
+    }
+    .main-wrapper {
+        margin-left: 0;
+    }
+    .menu-toggle {
+        display: block;
+    }
+}
+
+.menu-toggle {
+    display: none;
+    padding: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+}

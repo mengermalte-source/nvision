@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% set title = "Projekt bearbeiten: " ~ project.name %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2>Projekt bearbeiten</h2>
+        <a href="/ui/projects" class="btn" style="background: #6c757d; color: white;">Zurück zur Liste</a>
+    </div>
+    <form action="/ui/projects/{{ project.id }}/edit" method="post" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; align-items: start;">
+        <div>
+            <label>Name</label><br>
+            <input type="text" name="name" value="{{ project.name }}" required style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div>
+            <label>Interne Nummer</label><br>
+            <input type="text" name="internal_number" value="{{ project.internal_number if project.internal_number else '' }}" style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div>
+            <label>Bereich</label><br>
+            <select name="division" style="width: 100%; padding: 0.4rem;">
+                <option value="IT" {{ 'selected' if project.division == 'IT' else '' }}>IT</option>
+                <option value="Netzgesellschaft" {{ 'selected' if project.division == 'Netzgesellschaft' else '' }}>Netzgesellschaft</option>
+                <option value="Vertrieb" {{ 'selected' if project.division == 'Vertrieb' else '' }}>Vertrieb</option>
+                <option value="Kraftwerk" {{ 'selected' if project.division == 'Kraftwerk' else '' }}>Kraftwerk</option>
+            </select>
+        </div>
+        <div>
+            <label>Methodik</label><br>
+            <select name="methodology" style="width: 100%; padding: 0.4rem;">
+                <option value="klassisch" {{ 'selected' if project.methodology.value == 'klassisch' else '' }}>Klassisch</option>
+                <option value="agil" {{ 'selected' if project.methodology.value == 'agil' else '' }}>Agil</option>
+            </select>
+        </div>
+        <div style="grid-column: span 2;">
+            <label>Beschreibung</label><br>
+            <textarea name="description" style="width: 100%; padding: 0.4rem; height: 38px;">{{ project.description if project.description else '' }}</textarea>
+        </div>
+        <div style="grid-column: span 2;">
+            <label>Geschäftswert / Nutzen</label><br>
+            <input type="text" name="business_value" value="{{ project.business_value if project.business_value else '' }}" style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div>
+            <label>Start</label><br>
+            <input type="date" name="start_date" value="{{ project.start_date }}" required style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div>
+            <label>Ende</label><br>
+            <input type="date" name="end_date" value="{{ project.end_date }}" required style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div>
+            <label>Status</label><br>
+            <select name="status" style="width: 100%; padding: 0.4rem;">
+                {% for s in ['planning', 'active', 'on_hold', 'completed'] %}
+                <option value="{{ s }}" {{ 'selected' if project.status.value == s else '' }}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label>Verantwortlich IT</label><br>
+            <input type="text" name="responsible_it" value="{{ project.responsible_it if project.responsible_it else '' }}" style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div>
+            <label>Verantwortlich FB</label><br>
+            <input type="text" name="responsible_fb" value="{{ project.responsible_fb if project.responsible_fb else '' }}" style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div>
+            <label>CATS-Nummer</label><br>
+            <input type="text" name="cats_number" value="{{ project.cats_number if project.cats_number else '' }}" style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div>
+            <label>∑ PT Intern PAB</label><br>
+            <input type="number" name="pt_intern_pab" step="0.5" value="{{ project.pt_intern_pab }}" style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div>
+            <label>∑ PT Intern Geplant</label><br>
+            <input type="number" name="pt_intern_planned" step="0.5" value="{{ project.pt_intern_planned }}" style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div>
+            <label>∑ PT Extern Geplant</label><br>
+            <input type="number" name="pt_extern_planned" step="0.5" value="{{ project.pt_extern_planned }}" style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem; height: 100%;">
+            <input type="checkbox" name="pab_approval" id="pab_approval" {{ 'checked' if project.pab_approval else '' }}>
+            <label for="pab_approval">Freigabe PAB?</label>
+        </div>
+        <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 1rem;">
+            <button type="submit" class="btn btn-primary">Änderungen speichern</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

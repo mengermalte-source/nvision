@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% set title = "Stunden buchen" %}
+
+{% block content %}
+<div class="card">
+    <h2>Neue Buchung</h2>
+    <form action="/ui/bookings/add" method="post" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+        <div>
+            <label>Projekt</label><br>
+            <select name="project_id" required style="width: 100%; padding: 0.4rem;">
+                <option value="">-- Projekt wählen --</option>
+                {% for p in assigned_projects %}
+                <option value="{{ p.id }}">
+                    {{ p.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label>Datum</label><br>
+            <input type="date" name="date" value="{{ today }}" required style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div>
+            <label>Stunden</label><br>
+            <input type="number" name="hours" step="0.5" min="0.5" max="24" required style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div style="grid-column: span 2;">
+            <label>Beschreibung</label><br>
+            <input type="text" name="description" placeholder="Was hast du gemacht?" style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Buchen</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Meine Buchungen</h2>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+            <thead>
+                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                    <th>Datum</th>
+                    <th>Projekt</th>
+                    <th>Stunden</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in bookings %}
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    <td>{{ b.date }}</td>
+                    <td>{{ b.project.name }}</td>
+                    <td>{{ b.hours }} h</td>
+                    <td>{{ b.description if b.description else '-' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 1rem;">Noch keine Buchungen vorhanden.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% set title = "Kapazitäts-Heatmap " ~ year %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="margin: 0;">Jahresübersicht: {{ year }}</h2>
+        <div>
+            <a href="/?year={{ year - 1 }}" class="btn btn-primary">&laquo; {{ year - 1 }}</a>
+            <a href="/?year={{ year + 1 }}" class="btn btn-primary">{{ year + 1 }} &raquo;</a>
+        </div>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table class="heatmap-table">
+            <thead>
+                <tr>
+                    <th>Mitarbeiter</th>
+                    <th>FTE</th>
+                    <th>Jan</th>
+                    <th>Feb</th>
+                    <th>Mär</th>
+                    <th>Apr</th>
+                    <th>Mai</th>
+                    <th>Jun</th>
+                    <th>Jul</th>
+                    <th>Aug</th>
+                    <th>Sep</th>
+                    <th>Okt</th>
+                    <th>Nov</th>
+                    <th>Dez</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in heatmap %}
+                <tr>
+                    <td><strong>{{ entry.employee_name }}</strong></td>
+                    <td style="font-size: 0.8rem; color: #666;">{{ "%.1f"|format(entry.total_capacity_fte) }}</td>
+                    {% for m in entry.months %}
+                    <td class="heatmap-cell cell-{{ m.status }}" 
+                        onclick="showDetail({{ entry.employee_id }}, {{ entry.year }}, {{ m.month }})"
+                        title="Frei: {{ '%.2f'|format(m.free_capacity_fte) }} FTE">
+                        {{ "%.1f"|format(m.free_capacity_fte) }}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal für Details -->
+<div id="detailModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h3 id="modalTitle">Details</h3>
+        <div id="modalBody">
+            Lade Daten...
+        </div>
+    </div>
+</div>
+
+<script>
+function showDetail(employeeId, year, month) {
+    const modal = document.getElementById("detailModal");
+    const title = document.getElementById("modalTitle");
+    const body = document.getElementById("modalBody");
+    
+    modal.style.display = "block";
+    body.innerHTML = "Lade Daten...";
+    
+    fetch(`/api/heatmap/detail/${employeeId}/${year}/${month}`)
+        .then(response => response.json())
+        .then(data => {
+            title.innerText = `${data.employee_name} - ${month}/${year}`;
+            
+            let html = `
+                <p><strong>Gesamtkapazität:</strong> ${data.total_capacity_fte.toFixed(2)} FTE</p>
+                <p><strong>Service/Linie:</strong> ${data.service_capacity_fte.toFixed(2)} FTE</p>
+                <hr>
+                <h4>Projekt-Zuweisungen:</h4>
+            `;
+            
+            if (data.staffings.length === 0) {
+                html += "<p>Keine Projektzuweisungen in diesem Monat.</p>";
+            } else {
+                html += "<ul>";
+                data.staffings.forEach(s => {
+                    html += `<li>${s.project_name}: <strong>${s.capacity_fte.toFixed(2)} FTE</strong></li>`;
+                });
+                html += "</ul>";
+            }
+            
+            html += `<hr><p><strong>Verfügbar:</strong> <span style="color: ${data.free_capacity_fte < 0 ? 'red' : 'green'}">${data.free_capacity_fte.toFixed(2)} FTE</span></p>`;
+            
+            body.innerHTML = html;
+        })
+        .catch(err => {
+            body.innerHTML = "Fehler beim Laden der Details.";
+            console.error(err);
+        });
+}
+
+function closeModal() {
+    document.getElementById("detailModal").style.display = "none";
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById("detailModal");
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+</script>
+
+<style>
+.heatmap-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 2px;
+}
+.heatmap-table th {
+    text-align: center;
+    font-size: 0.8rem;
+}
+.heatmap-cell {
+    text-align: center;
+    padding: 10px 5px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    min-width: 45px;
+}
+.cell-ok { background-color: #c8e6c9; color: #2e7d32; }
+.cell-warning { background-color: #fff9c4; color: #f9a825; }
+.cell-error { background-color: #ffcdd2; color: #c62828; }
+
+.heatmap-cell:hover {
+    filter: brightness(0.9);
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 400px;
+    max-width: 90%;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+.close {
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+</style>
+{% endblock %}

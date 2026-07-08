@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRMS - {{ title if title else "Project & Resource Management" }}</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/js/app.js" defer></script>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand-title">PRMS</div>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-group">
+                <span class="nav-label">Planung</span>
+                <a href="/" class="{% if active_page == 'heatmap' %}active{% endif %}">
+                    Heatmap
+                </a>
+                <a href="/ui/projects" class="{% if active_page == 'projects' %}active{% endif %}">
+                    Projekte
+                </a>
+                {% if request.state.user and request.state.user.role.value == 'admin' %}
+                <a href="/ui/employees" class="{% if active_page == 'employees' %}active{% endif %}">
+                    Mitarbeiter
+                </a>
+                {% endif %}
+                {% if request.state.user and request.state.user.role.value == 'employee' %}
+                <a href="/ui/bookings" class="{% if active_page == 'bookings' %}active{% endif %}">
+                    Stunden buchen
+                </a>
+                {% endif %}
+            </div>
+
+            {% if request.state.user and request.state.user.role.value == 'admin' %}
+            <div class="nav-group">
+                <span class="nav-label">System</span>
+                <form action="/seed/" method="post" style="padding: 0 1.25rem;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 0.8rem;" onclick="return confirm('Alle Daten löschen und Testdaten laden?')">
+                        Datenbank seeden
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+            <div class="nav-group" style="margin-top: auto;">
+                <a href="/logout" style="color: #c62828;">
+                    Abmelden
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="top-bar">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <h1 class="page-title">{{ title if title else "PRMS" }}</h1>
+            <div class="user-info">
+                <span>{{ request.state.user.username if request.state.user else "Gast" }} ({{ request.state.user.role.value if request.state.user else "" }})</span>
+            </div>
+        </header>
+        
+        <main class="content-area">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% set title = "Mitarbeiter" %}
+
+{% block content %}
+<div class="card">
+    <h2>Mitarbeiter anlegen</h2>
+    <form action="/ui/employees/add" method="post" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; align-items: end;">
+        <div>
+            <label>Name</label><br>
+            <input type="text" name="name" required style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div>
+            <label>Typ</label><br>
+            <select name="type" style="width: 100%; padding: 0.4rem;">
+                <option value="internal">Intern</option>
+                <option value="external">Extern</option>
+            </select>
+        </div>
+        <div>
+            <label>Wochenstunden</label><br>
+            <input type="number" name="weekly_hours" value="40" step="0.5" style="width: 100%; padding: 0.4rem;">
+        </div>
+        <div>
+            <label>Team</label><br>
+            <select name="team_id" style="width: 100%; padding: 0.4rem;">
+                <option value="">Kein Team</option>
+                {% for team in teams %}
+                <option value="{{ team.id }}">{{ team.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Mitarbeiter speichern</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Mitarbeiterliste</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Typ</th>
+                <th>Team</th>
+                <th>h/Woche</th>
+                <th>h/Jahr</th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in employees %}
+            <tr>
+                <td>{{ r.id }}</td>
+                <td><strong>{{ r.name }}</strong></td>
+                <td>{{ r.type.value }}</td>
+                <td>{{ r.team.name if r.team else "-" }}</td>
+                <td>{{ r.weekly_hours }}</td>
+                <td>{{ r.annual_hours_target if r.annual_hours_target else "-" }}</td>
+                <td>
+                    <a href="/ui/employees/{{ r.id }}/plan" class="btn btn-primary" style="padding: 0.2rem 0.5rem; font-size: 0.8rem; text-decoration: none;">Planen</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

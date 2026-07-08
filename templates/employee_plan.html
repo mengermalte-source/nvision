@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% set title = "Mitarbeiterplanung: " ~ employee.name %}
+
+{% block content %}
+<div class="card">
+    <h2>Kapazitätsplanung</h2>
+    <p>Hier können Sie die jährliche Kapazität für <strong>{{ employee.name }}</strong> festlegen.</p>
+    
+    <form action="/ui/employees/{{ employee.id }}/plan" method="post" style="max-width: 400px;">
+        <div style="margin-bottom: 1.5rem;">
+            <label for="annual_hours_target" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Verfügbare Stunden pro Jahr</label>
+            <input type="number" 
+                   id="annual_hours_target" 
+                   name="annual_hours_target" 
+                   value="{{ employee.annual_hours_target if employee.annual_hours_target else (employee.weekly_hours * 52) }}" 
+                   step="1" 
+                   required 
+                   style="width: 100%; padding: 0.6rem; border: 1px solid #ced4da; border-radius: 4px;">
+            <small style="color: #6c757d;">Standard (Wochenstunden * 52): {{ employee.weekly_hours * 52 }} h</small>
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary">Planung speichern</button>
+            <a href="/ui/employees" class="btn" style="background: #e9ecef; color: #495057; text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px; display: inline-block;">Abbrechen</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Details</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div>
+            <strong>Team:</strong> {{ employee.team.name if employee.team else "Kein Team" }}
+        </div>
+        <div>
+            <strong>Wochenstunden:</strong> {{ employee.weekly_hours }} h
+        </div>
+        <div>
+            <strong>Typ:</strong> {{ employee.type.value }}
+        </div>
+        <div>
+            <strong>Eintrittsdatum:</strong> {{ employee.employment_start }}
+        </div>
+    </div>
+</div>
+{% endblock %}
