@@ -90,6 +90,8 @@ class Project(Base):
     pt_intern_pab = Column(Float, default=0.0)
     pt_intern_planned = Column(Float, default=0.0)
     pt_extern_planned = Column(Float, default=0.0)
+    economic_score = Column(Float, default=0.0) # 0.0 to 10.0
+    business_case = Column(String, nullable=True)
 
     staffings = relationship("Staffing", back_populates="project")
     bookings = relationship("Booking", back_populates="project")

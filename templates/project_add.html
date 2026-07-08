@@ -48,6 +48,11 @@
                 <textarea name="description" style="height: 60px;" placeholder="Projektziele und Umfang..."></textarea>
             </div>
 
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label>Business Case (Wirtschaftlichkeitsbegründung)</label>
+                <textarea name="business_case" style="height: 100px;" placeholder="Warum ist dieses Projekt wirtschaftlich rentabel? (Einsparungen, Umsatzsteigerung, Risikominimierung)..."></textarea>
+            </div>
+
             <!-- Verantwortliche & Finanzelles -->
             <div class="form-group">
                 <label>Verantwortlich IT</label>
@@ -89,6 +94,14 @@
                 <label>∑ PT Extern Geplant</label>
                 <input type="number" name="pt_extern_planned" step="0.5" value="0.0">
             </div>
+            <div class="form-group">
+                <label>Wirtschaftlichkeitsscore (0-10)</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="range" name="economic_score" id="economic_score" min="0" max="10" step="0.5" value="5.0" style="flex-grow: 1;">
+                    <span id="score_value" style="font-weight: bold; width: 30px;">5.0</span>
+                </div>
+                <small style="color: #666;">(0 = Nicht rentabel, 10 = Hochgradig rentabel)</small>
+            </div>
             <div style="display: flex; align-items: center; gap: 0.75rem; height: 100%; padding-top: 1rem;">
                 <input type="checkbox" name="pab_approval" id="pab_approval" style="width: 18px; height: 18px; cursor: pointer;">
                 <label for="pab_approval" style="cursor: pointer; font-weight: 600; margin-bottom: 0;">Freigabe PAB?</label>
@@ -101,4 +114,22 @@
         </div>
     </form>
 </div>
+
+<script>
+    const scoreInput = document.getElementById('economic_score');
+    const scoreValue = document.getElementById('score_value');
+    
+    scoreInput.addEventListener('input', function() {
+        scoreValue.textContent = parseFloat(this.value).toFixed(1);
+        
+        // Farbe basierend auf Score anpassen
+        if (this.value < 3) {
+            scoreValue.style.color = 'red';
+        } else if (this.value < 6) {
+            scoreValue.style.color = 'orange';
+        } else {
+            scoreValue.style.color = 'green';
+        }
+    });
+</script>
 {% endblock %}

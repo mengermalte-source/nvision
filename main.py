@@ -452,6 +452,8 @@ def ui_add_project(
     pt_intern_pab: float = Form(0.0),
     pt_intern_planned: float = Form(0.0),
     pt_extern_planned: float = Form(0.0),
+    economic_score: float = Form(0.0),
+    business_case: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     user: models.User = Depends(admin_required)
 ):
@@ -471,7 +473,9 @@ def ui_add_project(
         cats_number=cats_number,
         pt_intern_pab=pt_intern_pab,
         pt_intern_planned=pt_intern_planned,
-        pt_extern_planned=pt_extern_planned
+        pt_extern_planned=pt_extern_planned,
+        economic_score=economic_score,
+        business_case=business_case
     )
     db.add(db_project)
     db.commit()
@@ -508,6 +512,8 @@ def ui_edit_project(
     pt_intern_pab: float = Form(0.0),
     pt_intern_planned: float = Form(0.0),
     pt_extern_planned: float = Form(0.0),
+    economic_score: float = Form(0.0),
+    business_case: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     user: models.User = Depends(admin_required)
 ):
@@ -531,6 +537,8 @@ def ui_edit_project(
     project.pt_intern_pab = pt_intern_pab
     project.pt_intern_planned = pt_intern_planned
     project.pt_extern_planned = pt_extern_planned
+    project.economic_score = economic_score
+    project.business_case = business_case
     
     db.commit()
     return RedirectResponse(url="/ui/projects", status_code=303)
@@ -1349,6 +1357,18 @@ def ui_reports(request: Request, db: Session = Depends(get_db), user: models.Use
     division_labels = list(division_data.keys())
     division_values = list(division_data.values())
 
+    # 5. Wirtschaftlichkeits-Analyse (Economic Score vs PT)
+    economic_data = []
+    projects_for_analysis = db.query(models.Project).filter(models.Project.status != models.ProjectStatus.COMPLETED).all()
+    for p in projects_for_analysis:
+        total_pt = p.pt_intern_planned + p.pt_extern_planned
+        economic_data.append({
+            "name": p.name,
+            "score": p.economic_score or 0.0,
+            "pt": total_pt,
+            "status": p.status.value
+        })
+
     definitions = {
         "Projekte Gesamt": "Die Gesamtzahl aller Projekte im System (Planung, Aktiv, On Hold, Abgeschlossen).",
         "Aktive Projekte": "Projekte, die sich aktuell in der Umsetzung befinden (Status 'active').",
@@ -1377,6 +1397,7 @@ def ui_reports(request: Request, db: Session = Depends(get_db), user: models.Use
         "division_values": division_values,
         "total_projects": db.query(models.Project).count(),
         "active_projects": db.query(models.Project).filter(models.Project.status == models.ProjectStatus.ACTIVE).count(),
+        "economic_data": economic_data,
         "definitions": definitions
     }
     return templates.TemplateResponse(request=request, name="reports.html", context=context)

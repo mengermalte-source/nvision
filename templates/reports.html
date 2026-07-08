@@ -98,6 +98,11 @@
             <canvas id="divisionChart"></canvas>
             <div id="divisionChartFallback" style="display: none; text-align: center; margin-top: 2rem; color: var(--text-muted);">Diagramm konnte nicht geladen werden.</div>
         </div>
+        <div class="chart-container card" style="grid-column: 1 / -1; height: 500px;" onclick="showReportDefinition('Wirtschaftlichkeits-Matrix')">
+            <h3>Wirtschaftlichkeits-Matrix (Score vs. Aufwand) <span class="info-icon">ⓘ</span></h3>
+            <canvas id="economicChart"></canvas>
+            <div id="economicChartFallback" style="display: none; text-align: center; margin-top: 2rem; color: var(--text-muted);">Diagramm konnte nicht geladen werden.</div>
+        </div>
     </div>
 </div>
 
@@ -318,12 +323,69 @@
             document.getElementById('divisionChart').style.display = 'none';
             document.getElementById('divisionChartFallback').style.display = 'block';
         }
+
+        try {
+            // Economic Chart (Bubble/Scatter)
+            const econCtx = document.getElementById('economicChart').getContext('2d');
+            const econData = {{ economic_data|tojson }};
+            
+            new Chart(econCtx, {
+                type: 'bubble',
+                data: {
+                    datasets: [{
+                        label: 'Projekte',
+                        data: econData.map(p => ({
+                            x: p.pt,
+                            y: p.score,
+                            r: 10,
+                            name: p.name
+                        })),
+                        backgroundColor: econData.map(p => {
+                            if (p.score < 3) return 'rgba(220, 38, 38, 0.6)'; // Rot
+                            if (p.score < 6) return 'rgba(217, 119, 6, 0.6)'; // Orange
+                            return 'rgba(5, 150, 105, 0.6)'; // Grün
+                        })
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const p = context.raw;
+                                    return `${p.name}: Aufwand ${p.x} PT, Score ${p.y}`;
+                                }
+                            }
+                        },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Gesamtaufwand (PT)' },
+                            beginAtZero: true
+                        },
+                        y: {
+                            title: { display: true, text: 'Wirtschaftlichkeitsscore (0-10)' },
+                            beginAtZero: true,
+                            max: 10
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("Fehler beim Initialisieren des Economic-Charts:", e);
+            document.getElementById('economicChart').style.display = 'none';
+            document.getElementById('economicChartFallback').style.display = 'block';
+        }
     }
 
     // Start
     initCharts();
 
     const definitions = {{ definitions|tojson }};
+    definitions['Wirtschaftlichkeits-Matrix'] = 'Diese Matrix visualisiert Projekte basierend auf ihrem geschätzten Aufwand (X-Achse) und ihrem Wirtschaftlichkeitsscore (Y-Achse). Projekte oben links (hoher Nutzen, geringer Aufwand) sind ideal. Projekte unten rechts (geringer Nutzen, hoher Aufwand) sollten kritisch hinterfragt werden.';
 
     function showReportDefinition(metric) {
         const modal = document.getElementById("reportModal");

@@ -72,6 +72,15 @@
                                 {% if p.internal_number %}
                                 <small style="color: var(--text-muted); background: #eee; padding: 1px 5px; border-radius: 4px;">{{ p.internal_number }}</small>
                                 {% endif %}
+                                {% if p.economic_score is not none %}
+                                    {% if p.economic_score < 3 %}
+                                        <span class="badge" style="background-color: #fee2e2; color: #991b1b; font-size: 0.7rem; padding: 1px 5px;" title="Kritische Wirtschaftlichkeit">Score: {{ p.economic_score }}!</span>
+                                    {% elif p.economic_score < 6 %}
+                                        <span class="badge" style="background-color: #fef3c7; color: #92400e; font-size: 0.7rem; padding: 1px 5px;">Score: {{ p.economic_score }}</span>
+                                    {% else %}
+                                        <span class="badge" style="background-color: #d1fae5; color: #065f46; font-size: 0.7rem; padding: 1px 5px;">Score: {{ p.economic_score }}</span>
+                                    {% endif %}
+                                {% endif %}
                                 {% if p.division == 'IT' %}
                                     <span class="badge badge-it">{{ p.division }}</span>
                                 {% elif p.division == 'Netzgesellschaft' %}

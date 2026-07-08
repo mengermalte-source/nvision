@@ -99,6 +99,8 @@ class ProjectBase(BaseModel):
     pt_intern_pab: float = 0.0
     pt_intern_planned: float = 0.0
     pt_extern_planned: float = 0.0
+    economic_score: float = 0.0
+    business_case: Optional[str] = None
 
 class ProjectCreate(ProjectBase):
     pass
