@@ -211,17 +211,11 @@ def get_annual_heatmap(year: int, db: Session):
             first_day = date(year, m, 1)
             last_day = date(year, m, calendar.monthrange(year, m)[1])
             
-            staffings = db.query(models.Staffing).filter(
-                models.Staffing.employee_id == emp.id,
-                models.Staffing.start_date <= last_day,
-                models.Staffing.end_date >= first_day
-            ).all()
-            
-            staffed_cap = sum(s.capacity_fte for s in staffings)
+            staffed_cap = get_employee_staffed_capacity(db, emp.id, first_day, last_day)
             free_cap = total_cap - service_cap - staffed_cap
             
             status = "ok"
-            if free_cap < 0:
+            if free_cap < -0.01: # Kleine Toleranz für Floating Point
                 status = "error"
             elif free_cap < 0.1:
                 status = "warning"
@@ -242,6 +236,15 @@ def get_annual_heatmap(year: int, db: Session):
             months=months_data
         ))
     return results
+
+def get_employee_staffed_capacity(db: Session, employee_id: int, start_date: date, end_date: date) -> float:
+    staffings = db.query(models.Staffing).filter(
+        models.Staffing.employee_id == employee_id,
+        models.Staffing.start_date <= end_date,
+        models.Staffing.end_date >= start_date
+    ).all()
+    
+    return sum(s.capacity_fte for s in staffings)
 
 @app.get("/ui/projects", response_class=HTMLResponse)
 def ui_projects(request: Request, division: Optional[str] = None, show_completed: bool = Query(False), db: Session = Depends(get_db)):
@@ -554,10 +557,33 @@ def ui_update_employee_plan(
 def ui_staffing_add_form(request: Request, project_id: int, db: Session = Depends(get_db)):
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     employees = db.query(models.Employee).all()
+    
+    # Auslastung für jeden Mitarbeiter im Projektzeitraum berechnen
+    employee_data = []
+    for emp in employees:
+        total_cap = emp.weekly_hours / 40.0
+        service_allocs = db.query(models.ServiceAllocation).filter(models.ServiceAllocation.employee_id == emp.id).all()
+        service_cap = sum(s.capacity_percent for s in service_allocs) / 100.0
+        
+        # Bestehende Staffings im Projektzeitraum (ohne das aktuelle Projekt, falls schon was da ist)
+        current_staffed = get_employee_staffed_capacity(db, emp.id, project.start_date, project.end_date)
+        
+        # Wir wollen wissen, wie viel Kapazität noch frei ist
+        free_cap = total_cap - service_cap - current_staffed
+        
+        employee_data.append({
+            "emp": emp,
+            "total_cap": total_cap,
+            "service_cap": service_cap,
+            "current_staffed": current_staffed,
+            "free_cap": free_cap,
+            "utilization_percent": round((service_cap + current_staffed) / total_cap * 100) if total_cap > 0 else 0
+        })
+
     return templates.TemplateResponse(
         request=request, name="staffing_add.html", context={
             "project": project,
-            "employees": employees
+            "employee_data": employee_data
         }
     )
 

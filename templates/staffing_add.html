@@ -23,13 +23,15 @@
                         <th style="width: 60px; text-align: center;">Sel.</th>
                         <th>Mitarbeiter</th>
                         <th>Team / Rolle</th>
+                        <th style="width: 120px;">Auslastung</th>
                         <th style="width: 180px;">Startdatum</th>
                         <th style="width: 180px;">Enddatum</th>
                         <th style="width: 120px;">Kapazität (FTE)</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for emp in employees %}
+                    {% for item in employee_data %}
+                    {% set emp = item.emp %}
                     <tr id="row_{{ emp.id }}">
                         <td style="text-align: center;">
                             <input type="checkbox" name="selected_employees" value="{{ emp.id }}" id="emp_{{ emp.id }}" 
@@ -45,6 +47,18 @@
                             </div>
                             <div style="font-size: 0.75rem; color: var(--text-muted);">
                                 {{ emp.role.name if emp.role else '-' }}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-size: 0.9rem; font-weight: 600;">
+                                <span class="util-text-{{ emp.id }}" 
+                                      data-base-util="{{ item.utilization_percent }}"
+                                      data-total-cap="{{ item.total_cap }}">
+                                    {{ item.utilization_percent }}%
+                                </span>
+                            </div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">
+                                Frei: <span class="free-cap-{{ emp.id }}">{{ "%.2f"|format(item.free_cap) }}</span> FTE
                             </div>
                         </td>
                         <td>
@@ -122,6 +136,45 @@ function toggleInputs(empId) {
     } else {
         row.style.backgroundColor = 'transparent';
     }
+    
+    updateUtilization(empId);
 }
+
+function updateUtilization(empId) {
+    const isChecked = document.getElementById('emp_' + empId).checked;
+    const fteInput = document.getElementById('fte_' + empId);
+    const utilSpan = document.querySelector('.util-text-' + empId);
+    const freeSpan = document.querySelector('.free-cap-' + empId);
+    
+    if (!utilSpan || !fteInput) return;
+    
+    const baseUtil = parseFloat(utilSpan.getAttribute('data-base-util'));
+    const totalCap = parseFloat(utilSpan.getAttribute('data-total-cap'));
+    const newFte = isChecked ? parseFloat(fteInput.value) || 0 : 0;
+    
+    const totalFteUsed = (baseUtil / 100 * totalCap) + newFte;
+    const newPercent = totalCap > 0 ? Math.round(totalFteUsed / totalCap * 100) : 0;
+    const newFree = totalCap - totalFteUsed;
+    
+    utilSpan.innerText = newPercent + '%';
+    freeSpan.innerText = newFree.toFixed(2);
+    
+    let color = '#10b981';
+    if (newPercent > 100) {
+        color = '#ef4444';
+    } else if (newPercent > 90) {
+        color = '#f59e0b';
+    }
+    utilSpan.parentElement.style.color = color;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const fteInputs = document.querySelectorAll('input[type="number"]');
+    fteInputs.forEach(input => {
+        const empId = input.id.replace('fte_', '');
+        input.addEventListener('input', () => updateUtilization(empId));
+        updateUtilization(empId);
+    });
+});
 </script>
 {% endblock %}
