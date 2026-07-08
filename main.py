@@ -619,6 +619,7 @@ def seed_database(db: Session = Depends(get_db)):
     # Um sowohl API als auch UI zu bedienen:
     
     # 1. Clear existing data
+    db.query(models.Milestone).delete()
     db.query(models.Booking).delete()
     db.query(models.Staffing).delete()
     db.query(models.ServiceAllocation).delete()
@@ -685,7 +686,7 @@ def seed_database(db: Session = Depends(get_db)):
     
     res1, res2, res3 = all_employees[0], all_employees[1], all_employees[2]
     
-    # 5. Create Projects
+    # 5. Create Projects from raw data
     random.seed(42)  # For reproducible mixing
     raw_csv_data = """project_code;name;description;bereich;typ;status;priority;start_date;end_date;responsible_it;responsible_business;pab_approved;cats_order;planned_internal_pt;planned_external_pt;actual_pt;source_hint
 P.Z.23198-01;Indidividuelle Changes/Kleinmaßnahmen (< 10 PT);IT;;Ja;;;;;;;;27030137;;;;Aufträge zu Maßnahmen
@@ -820,7 +821,7 @@ P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Au
         name = row['name']
         internal_number = row['project_code']
         
-        # Durchmischte Zuweisung der Bereiche
+        # Durchmischte Zuweisung der Bereiche (reproduzierbar durch seed)
         division = random.choice(divisions)
         
         # Status mapping
@@ -839,7 +840,7 @@ P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Au
         if priority_raw and priority_raw.isdigit():
             priority = int(priority_raw)
         else:
-            # Zufällige Priorität 1-4
+            # Zufällige Priorität 1-4 (reproduzierbar durch seed)
             priority = random.randint(1, 4)
 
         p = models.Project(

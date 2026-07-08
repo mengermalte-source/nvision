@@ -1,16 +1,16 @@
 /* N-VISION Custom Styles - Inspired by Montessori App */
 :root {
-    --primary-color: #90bd1f;
-    --primary-hover: #7ea61b;
-    --primary-dark: #0b6b4a;
-    --primary-light: #f0f7e6;
-    --secondary-color: #0b6b4a;
-    --bg-color: #f5f8f1;
-    --text-color: #0f5132;
-    --text-muted: #4b6358;
+    --primary-color: #8a2b59;
+    --primary-hover: #722349;
+    --primary-dark: #4a1530;
+    --primary-light: #f5edf1;
+    --secondary-color: #631d3f;
+    --bg-color: #fdfafb;
+    --text-color: #2d0a1a;
+    --text-muted: #6b4d5b;
     --sidebar-width: 260px;
     --white: #ffffff;
-    --border-color: #d1dbca;
+    --border-color: #e6d5db;
     --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
     --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
     --danger: #d9534f;
@@ -20,6 +20,22 @@
     --radius-sm: 4px;
     --radius-md: 8px;
     --radius-lg: 12px;
+}
+
+/* Dark Mode Variables */
+.dark-mode {
+    --primary-color: #b34a7d;
+    --primary-hover: #c96092;
+    --primary-dark: #f5edf1;
+    --primary-light: #4a1530;
+    --secondary-color: #8a2b59;
+    --bg-color: #1a050e;
+    --text-color: #fdfafb;
+    --text-muted: #c9b3bd;
+    --white: #2d0a1a;
+    --border-color: #4a1530;
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+    --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -32,6 +48,7 @@ body {
     background: var(--bg-color);
     color: var(--text-color);
     line-height: 1.5;
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 /* Layout */
@@ -48,11 +65,11 @@ body {
     height: 100vh;
     background: var(--white);
     color: var(--text-color);
-    border-right: 3px solid var(--primary-color);
+    border-right: 3px solid var(--secondary-color);
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease;
 }
 
 .sidebar-header {
@@ -140,6 +157,7 @@ body {
     position: sticky;
     top: 0;
     z-index: 900;
+    transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .page-title {
@@ -161,6 +179,7 @@ body {
     box-shadow: var(--card-shadow);
     border: 1px solid var(--border-color);
     margin-bottom: 1rem;
+    transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card h2 {
@@ -250,12 +269,13 @@ body {
 .modern-table {
     width: 100%;
     border-collapse: collapse;
-    background: white;
+    background: var(--white);
+    transition: background 0.3s ease;
 }
 
 .modern-table th {
-    background: #f8fafc;
-    color: #64748b;
+    background: var(--primary-light);
+    color: var(--text-muted);
     text-transform: uppercase;
     font-size: 0.75rem;
     font-weight: 700;
@@ -268,7 +288,7 @@ body {
 .modern-table td {
     padding: 1rem 1.25rem;
     border-bottom: 1px solid var(--border-color);
-    color: #334155;
+    color: var(--text-color);
     font-size: 0.9rem;
 }
 
@@ -277,7 +297,8 @@ body {
 }
 
 .modern-table tr:hover {
-    background-color: #f8fafc;
+    background-color: var(--primary-light);
+    opacity: 0.9;
 }
 
 /* Badges */
@@ -344,7 +365,7 @@ body {
 
 /* Progress Bars */
 .progress-bar-container {
-    background: #f1f5f9;
+    background: var(--border-color);
     height: 8px;
     border-radius: 4px;
     overflow: hidden;

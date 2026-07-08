@@ -68,7 +68,11 @@
         <header class="top-bar">
             <button class="menu-toggle" id="menuToggle">☰</button>
             <h1 class="page-title">{{ title if title else "N-VISION" }}</h1>
-            <div class="user-info">
+            <div class="user-info" style="display: flex; align-items: center; gap: 1rem;">
+                <button id="themeToggle" class="btn btn-icon-only" title="Farbmodus umschalten" style="background: var(--primary-light); color: var(--primary-dark); border: 1px solid var(--border-color); cursor: pointer; padding: 5px 10px; border-radius: var(--radius-md);">
+                    <svg id="sunIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                    <svg id="moonIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                </button>
                 <span>{{ request.state.user.username if request.state.user else "Gast" }} ({{ request.state.user.role.value if request.state.user else "" }})</span>
             </div>
         </header>
