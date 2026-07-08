@@ -11,6 +11,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from datetime import date, datetime, timedelta
 import calendar
 import os
+import hashlib
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import os
@@ -75,7 +76,12 @@ templates.env.globals["static_url"] = static_url
 
 # --- Security Helpers ---
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except (ValueError, Exception):
+        # Legacy SHA256 fallback
+        sha256_hash = hashlib.sha256(plain_password.encode()).hexdigest()
+        return sha256_hash == hashed_password
 
 def get_password_hash(password):
     return pwd_context.hash(password)

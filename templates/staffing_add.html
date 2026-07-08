@@ -312,9 +312,9 @@ function updateUtilization(empId) {
     utilSpan.innerText = newPercent + '%';
     freeSpan.innerText = newFree.toFixed(2);
     
-    let color = '#10b981';
+    let color = '#018786';
     if (newPercent > 100) {
-        color = '#ef4444';
+        color = '#b00020';
     } else if (newPercent > 90) {
         color = '#f59e0b';
     }

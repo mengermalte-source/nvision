@@ -13,13 +13,13 @@
                 {{ project.division if project.division else 'Kein Bereich' }}
             </span>
             {% if project.priority == 1 %}
-                <span class="badge" style="background-color: #ef4444; color: white;">Priorität 1 (Hoch)</span>
+                <span class="badge" style="background-color: #b00020; color: white;">Priorität 1 (Hoch)</span>
             {% elif project.priority == 2 %}
                 <span class="badge" style="background-color: #f59e0b; color: white;">Priorität 2 (Mittel)</span>
             {% elif project.priority == 3 %}
-                <span class="badge" style="background-color: #3b82f6; color: white;">Priorität 3 (Niedrig)</span>
+                <span class="badge" style="background-color: #03DAc6; color: white;">Priorität 3 (Niedrig)</span>
             {% elif project.priority == 4 %}
-                <span class="badge" style="background-color: #10b981; color: white;">Priorität 4 (Sehr Niedrig)</span>
+                <span class="badge" style="background-color: #018786; color: white;">Priorität 4 (Sehr Niedrig)</span>
             {% else %}
                 <span class="badge badge-default">Priorität {{ project.priority }}</span>
             {% endif %}
