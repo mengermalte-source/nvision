@@ -86,14 +86,17 @@
         <div class="chart-container card" onclick="showReportDefinition('Projekt-Status Verteilung')">
             <h3>Projekt-Status Verteilung <span class="info-icon">ⓘ</span></h3>
             <canvas id="statusChart"></canvas>
+            <div id="statusChartFallback" style="display: none; text-align: center; margin-top: 2rem; color: var(--text-muted);">Diagramm konnte nicht geladen werden.</div>
         </div>
         <div class="chart-container card" onclick="showReportDefinition('Ressourcen-Auslastung')">
             <h3>Ressourcen-Auslastung (Plan %) <span class="info-icon">ⓘ</span></h3>
             <canvas id="utilizationChart"></canvas>
+            <div id="utilizationChartFallback" style="display: none; text-align: center; margin-top: 2rem; color: var(--text-muted);">Diagramm konnte nicht geladen werden.</div>
         </div>
         <div class="chart-container card" onclick="showReportDefinition('Projekte nach Bereich')">
             <h3>Projekte nach Bereich <span class="info-icon">ⓘ</span></h3>
             <canvas id="divisionChart"></canvas>
+            <div id="divisionChartFallback" style="display: none; text-align: center; margin-top: 2rem; color: var(--text-muted);">Diagramm konnte nicht geladen werden.</div>
         </div>
     </div>
 </div>
@@ -222,70 +225,94 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Status Chart
-    const statusCtx = document.getElementById('statusChart').getContext('2d');
-    new Chart(statusCtx, {
-        type: 'doughnut',
-        data: {
-            labels: {{ status_data.keys()|list|tojson }},
-            datasets: [{
-                data: {{ status_data.values()|list|tojson }},
-                backgroundColor: ['#059669', '#0284c7', '#d97706', '#dc2626', '#4b5563'],
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom' }
-            }
+    // Charts Initialisierung mit Fehlerbehandlung
+    function initCharts() {
+        try {
+            // Status Chart
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ status_labels|tojson }},
+                    datasets: [{
+                        data: {{ status_values|tojson }},
+                        backgroundColor: ['#059669', '#0284c7', '#d97706', '#dc2626', '#4b5563'],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("Fehler beim Initialisieren des Status-Charts:", e);
+            document.getElementById('statusChart').style.display = 'none';
+            document.getElementById('statusChartFallback').style.display = 'block';
         }
-    });
 
-    // Utilization Chart
-    const utilCtx = document.getElementById('utilizationChart').getContext('2d');
-    new Chart(utilCtx, {
-        type: 'line',
-        data: {
-            labels: {{ months|tojson }},
-            datasets: [{
-                label: 'Auslastung %',
-                data: {{ utilization|tojson }},
-                borderColor: '#065f46',
-                backgroundColor: 'rgba(6, 95, 70, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true, max: 120 }
-            }
+        try {
+            // Utilization Chart
+            const utilCtx = document.getElementById('utilizationChart').getContext('2d');
+            new Chart(utilCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ months|tojson }},
+                    datasets: [{
+                        label: 'Auslastung %',
+                        data: {{ utilization|tojson }},
+                        borderColor: '#065f46',
+                        backgroundColor: 'rgba(6, 95, 70, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 120 }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("Fehler beim Initialisieren des Auslastungs-Charts:", e);
+            document.getElementById('utilizationChart').style.display = 'none';
+            document.getElementById('utilizationChartFallback').style.display = 'block';
         }
-    });
 
-    // Division Chart
-    const divCtx = document.getElementById('divisionChart').getContext('2d');
-    new Chart(divCtx, {
-        type: 'bar',
-        data: {
-            labels: {{ division_data.keys()|list|tojson }},
-            datasets: [{
-                label: 'Projekte',
-                data: {{ division_data.values()|list|tojson }},
-                backgroundColor: '#059669'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            }
+        try {
+            // Division Chart
+            const divCtx = document.getElementById('divisionChart').getContext('2d');
+            new Chart(divCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ division_labels|tojson }},
+                    datasets: [{
+                        label: 'Projekte',
+                        data: {{ division_values|tojson }},
+                        backgroundColor: '#059669'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("Fehler beim Initialisieren des Division-Charts:", e);
+            document.getElementById('divisionChart').style.display = 'none';
+            document.getElementById('divisionChartFallback').style.display = 'block';
         }
-    });
+    }
+
+    // Start
+    initCharts();
 
     const definitions = {{ definitions|tojson }};
 

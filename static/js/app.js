@@ -6,16 +6,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (menuToggle && sidebar) {
         menuToggle.addEventListener('click', function(e) {
             e.stopPropagation();
-            if (window.innerWidth <= 1400) {
+            if (window.innerWidth <= 1024) {
                 sidebar.classList.toggle('active');
+            } else if (window.innerWidth <= 1400) {
+                // Im Bereich 1025-1400px ist sie standardmäßig collapsed
+                // Togglen aktiviert 'expanded'
+                sidebar.classList.toggle('expanded');
+                document.body.classList.toggle('sidebar-expanded');
             } else {
+                // Über 1400px ist sie standardmäßig expanded
+                // Togglen aktiviert 'collapsed'
                 sidebar.classList.toggle('collapsed');
                 document.body.classList.toggle('sidebar-collapsed');
             }
         });
 
         document.addEventListener('click', function(e) {
-            if (window.innerWidth <= 1400) {
+            if (window.innerWidth <= 1024) {
                 if (sidebar.classList.contains('active') && 
                     !sidebar.contains(e.target) && 
                     !menuToggle.contains(e.target)) {

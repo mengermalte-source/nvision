@@ -1,6 +1,7 @@
 services:
   app:
     build: .
+    container_name: nvision-app
     ports:
       - "8001:8000"
     volumes:
@@ -11,6 +12,3 @@ services:
       - SECRET_KEY=your-secret-key-here
       - DATABASE_URL=sqlite:///./n-vision.db
     restart: always
-
-volumes:
-  data:

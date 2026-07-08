@@ -56,11 +56,19 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        # CSP - Sehr restriktiv, ggf. anpassen falls Inline-Scripts nötig sind
-        response.headers["Content-Security-Policy"] = "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline';"
+        # CSP - Erweitert um CDN für Charts, Mermaid und SortableJS sowie Google Fonts zu erlauben
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "connect-src 'self' https://cdn.jsdelivr.net; "
+            "img-src 'self' data:;"
+        )
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 templates = Jinja2Templates(directory="templates")
 
@@ -564,6 +572,8 @@ def ui_project_detail(request: Request, project_id: int, db: Session = Depends(g
         raise HTTPException(status_code=404, detail="Project not found")
     
     progress = calculate_project_progress(project, db)
+    # Ensure progress is a float
+    progress = float(progress)
     
     return templates.TemplateResponse(
         request=request, name="project_detail.html", context={
@@ -1337,7 +1347,14 @@ def ui_reports(request: Request, db: Session = Depends(get_db), user: models.Use
         return RedirectResponse(url="/login")
     # 1. Projekt-Status-Verteilung
     status_counts = db.query(models.Project.status, func.count(models.Project.id)).group_by(models.Project.status).all()
-    status_data = {s.value if hasattr(s, 'value') else str(s): count for s, count in status_counts}
+    # Mappe Enum-Werte auf Anzeigenamen und stelle sicher, dass sie Strings sind
+    status_map = {
+        models.ProjectStatus.PLANNING: "PLANUNG",
+        models.ProjectStatus.ACTIVE: "AKTIV",
+        models.ProjectStatus.ON_HOLD: "ON HOLD",
+        models.ProjectStatus.COMPLETED: "ABGESCHLOSSEN"
+    }
+    status_data = {status_map.get(s, str(s)): count for s, count in status_counts}
     
     # 2. Projekte mit kritischem Zeitverzug oder Budget-Überschreitung (Fortschritt > Zeit)
     all_projects = db.query(models.Project).filter(models.Project.status != models.ProjectStatus.COMPLETED).all()
@@ -1423,7 +1440,14 @@ def ui_reports(request: Request, db: Session = Depends(get_db), user: models.Use
 
     # 4. Division Verteilung
     division_counts = db.query(models.Project.division, func.count(models.Project.id)).group_by(models.Project.division).all()
+    # Mappe Division-Namen
     division_data = {str(d) if d else "Unbekannt": count for d, count in division_counts}
+    
+    # Sicherstellen, dass die Daten für JS als Listen vorliegen, um Probleme mit .keys() zu vermeiden
+    status_labels = list(status_data.keys())
+    status_values = list(status_data.values())
+    division_labels = list(division_data.keys())
+    division_values = list(division_data.values())
 
     definitions = {
         "Projekte Gesamt": "Die Gesamtzahl aller Projekte im System (Planung, Aktiv, On Hold, Abgeschlossen).",
@@ -1442,13 +1466,15 @@ def ui_reports(request: Request, db: Session = Depends(get_db), user: models.Use
         "request": request,
         "active_page": "reports",
         "title": "Management Reports",
-        "status_data": status_data,
+        "status_labels": status_labels,
+        "status_values": status_values,
         "critical_projects": critical_projects,
         "sleeper_projects": sleeper_projects,
         "overdue_projects": sorted(overdue_projects, key=lambda x: x["end_date"]),
         "months": months,
         "utilization": utilization,
-        "division_data": division_data,
+        "division_labels": division_labels,
+        "division_values": division_values,
         "total_projects": db.query(models.Project).count(),
         "active_projects": db.query(models.Project).filter(models.Project.status == models.ProjectStatus.ACTIVE).count(),
         "definitions": definitions
