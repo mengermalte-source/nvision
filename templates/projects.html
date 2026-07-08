@@ -11,12 +11,34 @@
     </div>
 
     <div class="tabs">
-        <a href="/ui/projects" class="tab-item {% if not selected_division %}active{% endif %}">Alle</a>
-        <a href="/ui/projects?division=IT" class="tab-item {% if selected_division == 'IT' %}active{% endif %}">IT</a>
-        <a href="/ui/projects?division=Netzgesellschaft" class="tab-item {% if selected_division == 'Netzgesellschaft' %}active{% endif %}">Netzgesellschaft</a>
-        <a href="/ui/projects?division=Vertrieb" class="tab-item {% if selected_division == 'Vertrieb' %}active{% endif %}">Vertrieb</a>
-        <a href="/ui/projects?division=Kraftwerk" class="tab-item {% if selected_division == 'Kraftwerk' %}active{% endif %}">Kraftwerk</a>
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div>
+                <a href="/ui/projects?{% if show_completed %}show_completed=true{% endif %}" class="tab-item {% if not selected_division %}active{% endif %}">Alle</a>
+                <a href="/ui/projects?division=IT{% if show_completed %}&show_completed=true{% endif %}" class="tab-item {% if selected_division == 'IT' %}active{% endif %}">IT</a>
+                <a href="/ui/projects?division=Netzgesellschaft{% if show_completed %}&show_completed=true{% endif %}" class="tab-item {% if selected_division == 'Netzgesellschaft' %}active{% endif %}">Netzgesellschaft</a>
+                <a href="/ui/projects?division=Vertrieb{% if show_completed %}&show_completed=true{% endif %}" class="tab-item {% if selected_division == 'Vertrieb' %}active{% endif %}">Vertrieb</a>
+                <a href="/ui/projects?division=Kraftwerk{% if show_completed %}&show_completed=true{% endif %}" class="tab-item {% if selected_division == 'Kraftwerk' %}active{% endif %}">Kraftwerk</a>
+            </div>
+            <div style="padding-right: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer;">
+                    <input type="checkbox" id="showCompletedCheck" {% if show_completed %}checked{% endif %} onchange="toggleCompleted(this)">
+                    Abgeschlossene anzeigen
+                </label>
+            </div>
+        </div>
     </div>
+
+    <script>
+    function toggleCompleted(checkbox) {
+        const url = new URL(window.location.href);
+        if (checkbox.checked) {
+            url.searchParams.set('show_completed', 'true');
+        } else {
+            url.searchParams.delete('show_completed');
+        }
+        window.location.href = url.toString();
+    }
+    </script>
 
     <div class="modern-table-wrapper">
         <table class="modern-table">
@@ -95,7 +117,7 @@
                     </td>
                     <td style="min-width: 140px;">
                         <div class="progress-bar-container">
-                            <div class="progress-bar-fill" style="width: {{ p.progress }}%"></div>
+                            <div class="progress-bar-fill" style="width: 0%;" data-progress="{{ p.progress }}"></div>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <small style="font-weight: 600; color: var(--primary-color);">{{ p.progress }}%</small>
@@ -108,9 +130,16 @@
                             {% if request.state.user and request.state.user.role.value == 'admin' %}
                             <a href="/ui/projects/{{ p.id }}/edit" class="btn btn-small btn-edit" title="Bearbeiten">Edit</a>
                             <a href="/ui/staffing/add?project_id={{ p.id }}" class="btn btn-small btn-staffing" title="Staffing">Staff</a>
+                            {% if p.status.value != 'completed' %}
+                            <form action="/ui/projects/{{ p.id }}/complete" method="post" style="display: inline;">
+                                <button type="submit" class="btn btn-small" style="background-color: var(--secondary-color); color: white;" onclick="return confirm('Projekt wirklich abschließen?')">Abschließen</button>
+                            </form>
+                            {% endif %}
                             {% endif %}
                             {% if request.state.user and request.state.user.role.value == 'employee' %}
+                            {% if p.status.value != 'completed' %}
                             <a href="/ui/bookings?project_id={{ p.id }}" class="btn btn-small btn-booking">Buchen</a>
+                            {% endif %}
                             {% endif %}
                         </div>
                     </td>
@@ -120,4 +149,19 @@
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Fortschrittsbalken animieren (wie in project_detail.html)
+    document.querySelectorAll('.progress-bar-fill').forEach(bar => {
+        const progress = bar.getAttribute('data-progress');
+        if (progress) {
+            // Kleine Verzögerung für den Effekt
+            setTimeout(() => {
+                bar.style.width = progress + '%';
+            }, 100);
+        }
+    });
+</script>
 {% endblock %}

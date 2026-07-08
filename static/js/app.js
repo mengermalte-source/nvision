@@ -4,8 +4,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.querySelector('.sidebar');
     
     if (menuToggle && sidebar) {
-        menuToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('active');
+            } else {
+                sidebar.classList.toggle('collapsed');
+                document.body.classList.toggle('sidebar-collapsed');
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768) {
+                if (sidebar.classList.contains('active') && 
+                    !sidebar.contains(e.target) && 
+                    !menuToggle.contains(e.target)) {
+                    sidebar.classList.remove('active');
+                }
+            }
         });
     }
 
@@ -14,39 +30,4 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('input[type="date"].js-min-today').forEach(input => {
         input.min = today;
     });
-
-    // Theme Toggle Logic
-    const themeToggle = document.getElementById('themeToggle');
-    const sunIcon = document.getElementById('sunIcon');
-    const moonIcon = document.getElementById('moonIcon');
-    const body = document.body;
-
-    function updateIcons(isDark) {
-        if (isDark) {
-            sunIcon.style.display = 'block';
-            moonIcon.style.display = 'none';
-        } else {
-            sunIcon.style.display = 'none';
-            moonIcon.style.display = 'block';
-        }
-    }
-
-    // Check for saved theme preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-        body.classList.add('dark-mode');
-        updateIcons(true);
-    }
-
-    if (themeToggle) {
-        themeToggle.addEventListener('click', function() {
-            console.log('Theme toggle clicked');
-            body.classList.toggle('dark-mode');
-            const isDark = body.classList.contains('dark-mode');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            updateIcons(isDark);
-        });
-    } else {
-        console.error('Theme toggle button not found');
-    }
 });

@@ -10,6 +10,7 @@ from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker, Session
 from datetime import date, datetime, timedelta
 import calendar
+import os
 from typing import List, Optional
 import hashlib
 from jose import JWTError, jwt
@@ -30,6 +31,16 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="N-VISION - Project & Employee Management System")
 templates = Jinja2Templates(directory="templates")
+
+# Cache busting for static files
+def static_url(path: str):
+    full_path = os.path.join("static", path.replace("/static/", "", 1).lstrip("/"))
+    if os.path.exists(full_path):
+        mtime = int(os.path.getmtime(full_path))
+        return f"{path}?v={mtime}"
+    return path
+
+templates.env.globals["static_url"] = static_url
 
 # --- Security Helpers ---
 def verify_password(plain_password, hashed_password):
@@ -108,9 +119,16 @@ def calculate_project_progress(project: models.Project, db: Session):
     total_booked = db.query(func.sum(models.Booking.hours)).filter(models.Booking.project_id == project.id).scalar() or 0.0
     # Assuming 1 PT = 8 hours
     total_planned_hours = (project.pt_intern_planned + project.pt_extern_planned) * 8.0
+    
     if total_planned_hours > 0:
         progress = (total_booked / total_planned_hours) * 100
-        return min(progress, 100.0)
+        return min(round(progress, 1), 100.0)
+    
+    # Bugfix: Wenn Stunden gebucht wurden, aber kein Plan existiert,
+    # zeigen wir 100% an (da der Plan 0 ist, ist jede Stunde "über Plan").
+    if total_booked > 0:
+        return 100.0
+        
     return 0.0
 
 # --- UI Routes ---
@@ -217,7 +235,7 @@ def get_annual_heatmap(year: int, db: Session):
     return results
 
 @app.get("/ui/projects", response_class=HTMLResponse)
-def ui_projects(request: Request, division: Optional[str] = None, db: Session = Depends(get_db)):
+def ui_projects(request: Request, division: Optional[str] = None, show_completed: bool = Query(False), db: Session = Depends(get_db)):
     if not request.state.user:
         return RedirectResponse(url="/login")
     
@@ -230,6 +248,9 @@ def ui_projects(request: Request, division: Optional[str] = None, db: Session = 
     if division:
         query = query.filter(models.Project.division == division)
         
+    if not show_completed:
+        query = query.filter(models.Project.status != models.ProjectStatus.COMPLETED)
+        
     projects = query.all()
     
     # Add progress to each project object (dynamically)
@@ -241,7 +262,8 @@ def ui_projects(request: Request, division: Optional[str] = None, db: Session = 
             "projects": projects,
             "active_page": "projects",
             "user": request.state.user,
-            "selected_division": division
+            "selected_division": division,
+            "show_completed": show_completed
         }
     )
 
@@ -250,7 +272,10 @@ def ui_bookings(request: Request, db: Session = Depends(get_db)):
     if not request.state.user or request.state.user.role != models.UserRole.EMPLOYEE:
         return RedirectResponse(url="/")
     
-    assigned_projects = db.query(models.Project).join(models.Staffing).filter(models.Staffing.employee_id == request.state.user.employee_id).all()
+    assigned_projects = db.query(models.Project).join(models.Staffing).filter(
+        models.Staffing.employee_id == request.state.user.employee_id,
+        models.Project.status != models.ProjectStatus.COMPLETED
+    ).all()
     bookings = db.query(models.Booking).filter(models.Booking.employee_id == request.state.user.employee_id).order_by(models.Booking.date.desc()).all()
     
     return templates.TemplateResponse(
@@ -395,6 +420,16 @@ def ui_edit_project(
     project.pt_intern_planned = pt_intern_planned
     project.pt_extern_planned = pt_extern_planned
     
+    db.commit()
+    return RedirectResponse(url="/ui/projects", status_code=303)
+
+@app.post("/ui/projects/{project_id}/complete")
+def ui_complete_project(project_id: int, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    project.status = models.ProjectStatus.COMPLETED
     db.commit()
     return RedirectResponse(url="/ui/projects", status_code=303)
 
@@ -843,6 +878,18 @@ P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Au
             # Zufällige Priorität 1-4 (reproduzierbar durch seed)
             priority = random.randint(1, 4)
 
+        # Planned hours mapping
+        try:
+            pt_intern_raw = row.get('planned_internal_pt', '')
+            pt_extern_raw = row.get('planned_external_pt', '')
+            
+            # Falls Feld leer, weisen wir einen Standardwert zu, damit Fortschritt berechenbar ist
+            pt_intern = float(pt_intern_raw) if pt_intern_raw and pt_intern_raw.strip() else 10.0
+            pt_extern = float(pt_extern_raw) if pt_extern_raw and pt_extern_raw.strip() else 0.0
+        except ValueError:
+            pt_intern = 10.0
+            pt_extern = 0.0
+
         p = models.Project(
             name=name,
             description=f"Automatischer Import für Projekt {name}.",
@@ -857,7 +904,9 @@ P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Au
             responsible_it=row['responsible_it'],
             responsible_fb=row['responsible_business'],
             cats_number=row['cats_order'],
-            pab_approval=1 if "ja" in status_raw else 0
+            pab_approval=1 if "ja" in status_raw else 0,
+            pt_intern_planned=pt_intern,
+            pt_extern_planned=pt_extern
         )
         all_imported_projects.append(p)
     

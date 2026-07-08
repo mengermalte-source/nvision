@@ -4,19 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - N-VISION</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <script src="/static/js/app.js" defer></script>
+    <link rel="stylesheet" href="{{ static_url('/static/styles.css') }}">
+    <script src="{{ static_url('/static/js/app.js') }}" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body class="login-body">
-    <div style="position: fixed; top: 1rem; right: 1rem; z-index: 1000;">
-        <button id="themeToggle" class="btn btn-icon-only" title="Farbmodus umschalten" style="background: var(--white); color: var(--primary-dark); border: 1px solid var(--border-color); cursor: pointer; padding: 5px 10px; border-radius: var(--radius-md); box-shadow: var(--card-shadow);">
-            <svg id="sunIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-            <svg id="moonIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-        </button>
-    </div>
     <div class="login-card">
         <div style="text-align: center; margin-bottom: 2.5rem;">
             <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary-dark); letter-spacing: -0.05em; margin-bottom: 0.5rem;">N-VISION</div>
