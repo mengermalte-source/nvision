@@ -151,6 +151,7 @@ class AnnualHeatmapEntry(BaseModel):
 class StaffingDetail(BaseModel):
     project_name: str
     capacity_fte: float
+    booked_hours: float = 0.0
 
 class CapacityDetail(BaseModel):
     employee_name: str

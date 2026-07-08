@@ -122,7 +122,7 @@ def calculate_project_progress(project: models.Project, db: Session):
     
     if total_planned_hours > 0:
         progress = (total_booked / total_planned_hours) * 100
-        return min(round(progress, 1), 100.0)
+        return round(progress, 1)
     
     # Bugfix: Wenn Stunden gebucht wurden, aber kein Plan existiert,
     # zeigen wir 100% an (da der Plan 0 ist, ist jede Stunde "über Plan").
@@ -172,9 +172,18 @@ def get_capacity_detail(employee_id: int, year: int, month: int, db: Session = D
     staffing_details = []
     staffed_cap = 0.0
     for s in staffings:
+        # Get bookings for this project and employee in this month
+        booked = db.query(func.sum(models.Booking.hours)).filter(
+            models.Booking.employee_id == employee.id,
+            models.Booking.project_id == s.project_id,
+            models.Booking.date >= first_day,
+            models.Booking.date <= last_day
+        ).scalar() or 0.0
+        
         staffing_details.append(schemas.StaffingDetail(
             project_name=s.project.name,
-            capacity_fte=s.capacity_fte
+            capacity_fte=s.capacity_fte,
+            booked_hours=booked
         ))
         staffed_cap += s.capacity_fte
         
@@ -214,7 +223,7 @@ def get_annual_heatmap(year: int, db: Session):
             status = "ok"
             if free_cap < 0:
                 status = "error"
-            elif free_cap < 0.2:
+            elif free_cap < 0.1:
                 status = "warning"
                 
             months_data.append(schemas.MonthlyCapacity(
@@ -647,12 +656,6 @@ def get_staffings(project_id: Optional[int] = None, db: Session = Depends(get_db
 
 @app.post("/seed/")
 def seed_database(db: Session = Depends(get_db)):
-    # ... (Seed-Logik bleibt gleich)
-    # ...
-    # Rückleitung zur Heatmap nach dem Seeden, wenn es über die UI kommt
-    # Wir prüfen nicht explizit auf Request, da es ein POST ist.
-    # Um sowohl API als auch UI zu bedienen:
-    
     # 1. Clear existing data
     db.query(models.Milestone).delete()
     db.query(models.Booking).delete()
@@ -662,6 +665,7 @@ def seed_database(db: Session = Depends(get_db)):
     db.query(models.Employee).delete()
     db.query(models.Role).delete()
     db.query(models.Team).delete()
+    db.commit()
     
     # 2. Create Teams
     teams = [models.Team(name=n) for n in ["Backend", "Frontend", "DevOps", "QA"]]
@@ -933,77 +937,116 @@ P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Au
     p2 = all_imported_projects[2]
     
     # 6. Create Staffing
-    # Wir weisen ALLEN Mitarbeitern Projekte zu, um eine ordentliche Auslastung zu zeigen.
-    # Einige Projekte werden "vollgebucht".
+    # Wir weisen Mitarbeitern Projekte zu, achten aber darauf, dass sie nicht überplant sind.
     staffings = []
     
-    # Bestimme einige Projekte, die "voll" werden sollen (z.B. die ersten 10)
-    full_projects = all_imported_projects[:10]
+    # Wir verfolgen die Auslastung pro Mitarbeiter, um Überplanung zu vermeiden
+    employee_workload = {emp.id: 0.0 for emp in all_employees}
     
-    for i, emp in enumerate(all_employees):
-        # Jedem Mitarbeiter 1-3 Projekte zuweisen
-        num_projects = random.randint(1, 3)
-        
-        # Sicherstellen, dass die "full_projects" bevorzugt belegt werden, wenn i klein ist
-        if i < 40:
-             selected_projects = random.sample(full_projects, min(num_projects, len(full_projects)))
-             # Eventuell noch ein zufälliges dazu
-             if len(selected_projects) < num_projects:
-                 remaining = [p for p in all_imported_projects if p not in selected_projects]
-                 selected_projects.extend(random.sample(remaining, num_projects - len(selected_projects)))
-        else:
-             selected_projects = random.sample(all_imported_projects, num_projects)
-
-        for proj in selected_projects:
-            # Wenn es eines der "full_projects" ist, geben wir mehr Kapazität
-            if proj in full_projects:
-                cap = round(random.uniform(0.3, 0.6), 1)
-            else:
-                cap = round(random.uniform(0.05, 0.3), 1)
-                
-            s = models.Staffing(
-                project_id=proj.id,
-                employee_id=emp.id,
-                start_date=date(2026, 1, 1),
-                end_date=date(2026, 12, 31),
-                capacity_fte=cap
-            )
-            staffings.append(s)
-    db.add_all(staffings)
-    
-    # 7. Service Allocation (Linienaufgaben)
+    # 7. Service Allocation (Linienaufgaben) zuerst, da diese die Grundlast bilden
     # Alle Mitarbeiter haben etwas Grundlast in der Linie (10-20%)
     for emp in all_employees:
+        base_load = float(random.choice([10, 15, 20]))
         db.add(models.ServiceAllocation(
             employee_id=emp.id, 
-            capacity_percent=float(random.choice([10, 15, 20])), 
+            capacity_percent=base_load, 
             description="Linienaufgaben / Grundlast"
         ))
+        employee_workload[emp.id] += base_load / 100.0
+    
+    # Bestimme einige Projekte, die etwas mehr Aufmerksamkeit bekommen
+    important_projects = all_imported_projects[:15]
+    
+    for i, emp in enumerate(all_employees):
+        # Jedem Mitarbeiter 1-2 Projekte zuweisen (vorher 1-3)
+        # Seltener 2 Projekte, meistens 1
+        num_projects = 1 if random.random() > 0.2 else 2
+        
+        # Verfügbare Kapazität
+        # Wir lassen öfter eine leichte Überplanung zu oder gehen näher an die 100%
+        # Wahrscheinlichkeit für Überplanung leicht erhöhen (15%)
+        rand_val = random.random()
+        if rand_val > 0.85:
+             max_target = 1.2 # Rot
+        elif rand_val > 0.5:
+             max_target = 1.0 # Gelb/Orange
+        else:
+             max_target = 0.8 # Grün
+             
+        selected_projects = random.sample(all_imported_projects, num_projects)
+        
+        for proj in selected_projects:
+            remaining_cap = max_target - employee_workload[emp.id]
+            if remaining_cap <= 0.05:
+                break
+                
+            # Kapazität zwischen 0.1 und der verbleibenden Kapazität
+            # Wir geben etwas großzügigere Anteile
+            cap = round(random.uniform(0.1, max(0.2, remaining_cap)), 1)
+            
+            if cap > 0:
+                s = models.Staffing(
+                    project_id=proj.id,
+                    employee_id=emp.id,
+                    start_date=date(2026, 1, 1),
+                    end_date=date(2026, 12, 31),
+                    capacity_fte=cap
+                )
+                staffings.append(s)
+                employee_workload[emp.id] += cap
+                
+    db.add_all(staffings)
     
     # 8. Buchungen (Ist-Stunden) erzeugen
     # Um Fortschritt in Projekten zu zeigen, brauchen wir Buchungen.
     # Wir buchen für das erste Halbjahr 2026.
+    # Achte darauf, dass der Fortschritt zwischen 0 und 100 liegt.
     bookings = []
-    current_date = date(2026, 1, 2) # Start im Januar
     end_booking_date = date(2026, 7, 1)
     
-    # Wir nehmen eine Stichprobe von Mitarbeitern und Projekten für Buchungen, 
-    # um die DB nicht zu sprengen, aber genug für "Progress" zu haben.
+    # Wir tracken die bereits gebuchten Stunden pro Projekt im Seed
+    project_booked_hours_seed = {}
+
     for s in staffings[:150]: # Erste 150 Staffings bekommen Buchungen
-        # Buche jede Woche 4 Stunden auf dieses Projekt für 20 Wochen
+        # Projekt direkt aus der Liste der importierten Projekte holen für Effizienz
+        proj = next((p for p in all_imported_projects if p.id == s.project_id), None)
+        if not proj:
+            continue
+            
+        total_planned_hours = (proj.pt_intern_planned + proj.pt_extern_planned) * 8.0
+        if total_planned_hours <= 0:
+            continue
+
+        if proj.id not in project_booked_hours_seed:
+            # Zufälliger Zielfortschritt für dieses Projekt (zwischen 10% und 90%)
+            project_booked_hours_seed[proj.id] = {
+                "current": 0.0,
+                "target": total_planned_hours * random.uniform(0.1, 0.9)
+            }
+        
+        # Buche jede Woche etwas auf dieses Projekt
         for week in range(20):
             booking_date = s.start_date + timedelta(weeks=week, days=random.randint(0, 4))
             if booking_date < end_booking_date:
-                # Stunden basierend auf FTE (vereinfacht)
-                hours = s.capacity_fte * 40 * random.uniform(0.8, 1.2)
-                b = models.Booking(
-                    employee_id=s.employee_id,
-                    project_id=s.project_id,
-                    date=booking_date,
-                    hours=round(hours, 1),
-                    description="Projektarbeit gemäß Staffing"
-                )
-                bookings.append(b)
+                # Verbleibende Stunden für dieses Projekt
+                remaining = project_booked_hours_seed[proj.id]["target"] - project_booked_hours_seed[proj.id]["current"]
+                if remaining <= 0:
+                    break
+                
+                # Stunden basierend auf FTE, aber gedeckelt durch das Ziel
+                hours_suggestion = s.capacity_fte * 40 * random.uniform(0.5, 1.0)
+                hours = min(hours_suggestion, remaining)
+                
+                if hours > 0.1:
+                    b = models.Booking(
+                        employee_id=s.employee_id,
+                        project_id=s.project_id,
+                        date=booking_date,
+                        hours=round(hours, 1),
+                        description="Projektarbeit gemäß Staffing"
+                    )
+                    bookings.append(b)
+                    project_booked_hours_seed[proj.id]["current"] += round(hours, 1)
     
     db.add_all(bookings)
     db.commit()

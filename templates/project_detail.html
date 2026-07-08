@@ -42,7 +42,13 @@
             <h2>Stammdaten & Finanzen</h2>
             <div style="text-align: right;">
                 <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Fortschritt</div>
+                {% if progress > 100 %}
+                <div style="font-size: 1.25rem; font-weight: 800; color: var(--danger);">
+                    {{ progress }}% <span title="Überbucht!">⚠️</span>
+                </div>
+                {% else %}
                 <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary-color);">{{ progress }}%</div>
+                {% endif %}
             </div>
         </div>
         
@@ -81,7 +87,11 @@
 
         <div style="margin-top: 1rem;">
             <div class="progress-bar-container" style="height: 10px;">
+                {% if progress > 100 %}
+                <div class="progress-bar-fill overbooked" style="width: 0%;" data-progress="100"></div>
+                {% else %}
                 <div class="progress-bar-fill" style="width: 0%;" data-progress="{{ progress }}"></div>
+                {% endif %}
             </div>
             <div style="display: flex; justify-content: space-between; margin-top: 0.25rem;">
                 <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Start</span>

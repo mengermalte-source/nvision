@@ -2,9 +2,12 @@
 {% set title = "Kapazitäts-Heatmap " ~ year %}
 
 {% block content %}
-<div class="card">
+<div class="card heatmap-container">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-        <h2 style="margin: 0;">Jahresübersicht {{ year }}</h2>
+        <div>
+            <h2 style="margin: 0; font-size: 1.5rem;">Kapazitäts-Heatmap</h2>
+            <p style="margin: 0.25rem 0 0; color: var(--text-muted); font-size: 0.9rem;">Übersicht der freien Kapazitäten pro Mitarbeiter in FTE für {{ year }}</p>
+        </div>
         <div class="action-buttons">
             <a href="/?year={{ year - 1 }}" class="btn btn-outline">&laquo; {{ year - 1 }}</a>
             <a href="/?year={{ year + 1 }}" class="btn btn-outline">{{ year + 1 }} &raquo;</a>
@@ -12,32 +15,32 @@
     </div>
 
 <div class="modern-table-wrapper" style="border: none; overflow-x: auto;">
-        <table class="heatmap-table" style="width: 100%; border-collapse: separate; border-spacing: 4px;">
+        <table class="heatmap-table" style="width: 100%; border-collapse: separate; border-spacing: 6px;">
             <thead>
                 <tr style="display: table-row;">
-                    <th style="background: transparent; border: none; text-align: left; padding-left: 0; width: 250px; display: table-cell;">Mitarbeiter</th>
-                    <th style="background: transparent; border: none; width: 60px; text-align: center; display: table-cell;">FTE</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Jan</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Feb</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Mär</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Apr</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Mai</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Jun</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Jul</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Aug</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Sep</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Okt</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Nov</th>
-                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Dez</th>
+                    <th style="background: transparent; border: none; text-align: left; padding-left: 0; width: 220px; display: table-cell; color: var(--text-muted); font-weight: 600;">Mitarbeiter</th>
+                    <th style="background: transparent; border: none; width: 50px; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">FTE</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Jan</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Feb</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Mär</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Apr</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Mai</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Jun</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Jul</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Aug</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Sep</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Okt</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Nov</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell; color: var(--text-muted); font-weight: 600;">Dez</th>
                 </tr>
             </thead>
             <tbody>
                 {% for entry in heatmap %}
                 <tr style="display: table-row;">
-                    <td style="padding: 0.5rem 0; vertical-align: middle; display: table-cell; width: 250px;">
-                        <div style="font-weight: 700;">{{ entry.employee_name }}</div>
+                    <td style="padding: 0.75rem 0; vertical-align: middle; display: table-cell; width: 220px;">
+                        <div style="font-weight: 600; color: var(--primary-dark); font-size: 0.95rem;">{{ entry.employee_name }}</div>
                     </td>
-                    <td style="text-align: center; color: var(--text-muted); font-size: 0.8rem; vertical-align: middle; display: table-cell; width: 60px;">{{ "%.1f"|format(entry.total_capacity_fte) }}</td>
+                    <td style="text-align: center; color: var(--text-muted); font-size: 0.8rem; vertical-align: middle; display: table-cell; width: 50px;">{{ "%.1f"|format(entry.total_capacity_fte) }}</td>
                     {% for m in entry.months %}
                     <td class="heatmap-cell cell-{{ m.status }}" 
                         data-employee="{{ entry.employee_id }}"
@@ -54,6 +57,21 @@
             </tbody>
         </table>
     </div>
+
+    <div class="heatmap-legend">
+        <div class="legend-item">
+            <div class="legend-color cell-ok" style="border: 1px solid #d1fae5;"></div>
+            <span>Verfügbar (> 0.1 FTE)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color cell-warning" style="border: 1px solid #fef3c7;"></div>
+            <span>Ausgelastet (0.0 - 0.1 FTE)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color cell-error" style="border: 1px solid #fee2e2;"></div>
+            <span>Überlastet (< 0.0 FTE)</span>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -67,7 +85,7 @@
 <div id="detailModal" class="modal">
     <div class="modal-content">
         <span class="modal-close" onclick="closeModal()">&times;</span>
-        <h3 id="modalTitle" style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.5rem;">Details</h3>
+        <h3 id="modalTitle" style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.25rem; color: var(--primary-dark); border-bottom: 2px solid var(--primary-light); padding-bottom: 0.75rem;">Details</h3>
         <div id="modalBody">
             Lade Daten...
         </div>
@@ -89,23 +107,47 @@ function showDetail(employeeId, year, month) {
             title.innerText = `${data.employee_name} - ${month}/${year}`;
             
             let html = `
-                <p><strong>Gesamtkapazität:</strong> ${data.total_capacity_fte.toFixed(2)} FTE</p>
-                <p><strong>Service/Linie:</strong> ${data.service_capacity_fte.toFixed(2)} FTE</p>
-                <hr>
-                <h4>Projekt-Zuweisungen:</h4>
+                <div style="margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: var(--text-muted);">Gesamtkapazität</span>
+                        <span style="font-weight: 600;">${data.total_capacity_fte.toFixed(2)} FTE</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: var(--text-muted);">Service/Linie</span>
+                        <span style="font-weight: 600;">${data.service_capacity_fte.toFixed(2)} FTE</span>
+                    </div>
+                </div>
+                
+                <h4 style="font-size: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">Projekt-Zuweisungen</h4>
             `;
             
             if (data.staffings.length === 0) {
-                html += "<p>Keine Projektzuweisungen in diesem Monat.</p>";
+                html += "<p style='color: var(--text-muted); font-style: italic;'>Keine Projektzuweisungen in diesem Monat.</p>";
             } else {
-                html += "<ul>";
+                html += "<div style='display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;'>";
                 data.staffings.forEach(s => {
-                    html += `<li>${s.project_name}: <strong>${s.capacity_fte.toFixed(2)} FTE</strong></li>`;
+                    html += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-color); padding: 0.75rem; border-radius: var(--radius-md);">
+                            <div style="display: flex; flex-direction: column;">
+                                <span style="font-weight: 500;">${s.project_name}</span>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">Gebucht: ${s.booked_hours.toFixed(1)} h</span>
+                            </div>
+                            <span class="badge badge-default">${s.capacity_fte.toFixed(2)} FTE</span>
+                        </div>
+                    `;
                 });
-                html += "</ul>";
+                html += "</div>";
             }
             
-            html += `<hr><p><strong>Verfügbar:</strong> <span style="color: ${data.free_capacity_fte < 0 ? 'red' : 'green'}">${data.free_capacity_fte.toFixed(2)} FTE</span></p>`;
+            const freeVal = data.free_capacity_fte;
+            const freeColor = freeVal < 0 ? 'var(--danger)' : (freeVal < 0.1 ? 'var(--warning)' : 'var(--success)');
+            
+            html += `
+                <div style="margin-top: 1.5rem; padding: 1rem; background: ${freeVal < 0 ? '#fef2f2' : '#ecfdf5'}; border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 700;">Verfügbare Kapazität</span>
+                    <span style="font-size: 1.25rem; font-weight: 800; color: ${freeColor}">${freeVal.toFixed(2)} FTE</span>
+                </div>
+            `;
             
             body.innerHTML = html;
         })

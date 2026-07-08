@@ -117,16 +117,25 @@
                     </td>
                     <td style="min-width: 140px;">
                         <div class="progress-bar-container">
+                            {% if p.progress > 100 %}
+                            <div class="progress-bar-fill overbooked" style="width: 0%;" data-progress="100"></div>
+                            {% else %}
                             <div class="progress-bar-fill" style="width: 0%;" data-progress="{{ p.progress }}"></div>
+                            {% endif %}
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
+                            {% if p.progress > 100 %}
+                            <small style="font-weight: 600; color: var(--danger);">
+                                {{ p.progress }}% <span title="Überbucht!">⚠️</span>
+                            </small>
+                            {% else %}
                             <small style="font-weight: 600; color: var(--primary-color);">{{ p.progress }}%</small>
+                            {% endif %}
                             <small style="color: var(--text-muted); font-size: 0.7rem;">gebucht</small>
                         </div>
                     </td>
                     <td style="text-align: right;">
                         <div class="action-buttons" style="justify-content: flex-end;">
-                            <a href="/ui/projects/{{ p.id }}" class="btn btn-small btn-details" title="Details">Details</a>
                             {% if request.state.user and request.state.user.role.value == 'admin' %}
                             <a href="/ui/projects/{{ p.id }}/edit" class="btn btn-small btn-edit" title="Bearbeiten">Edit</a>
                             <a href="/ui/staffing/add?project_id={{ p.id }}" class="btn btn-small btn-staffing" title="Staffing">Staff</a>
