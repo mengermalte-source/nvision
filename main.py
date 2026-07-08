@@ -84,10 +84,24 @@ def admin_required(user: models.User = Depends(get_current_user)):
     return user
 
 # Context Processor for templates
+def get_setting(db: Session, key: str, default: str = None):
+    setting = db.query(models.Setting).filter(models.Setting.key == key).first()
+    return setting.value if setting else default
+
 @app.middleware("http")
 async def add_global_data_to_request(request: Request, call_next):
     db = SessionLocal()
     request.state.user = await get_current_user(request, db)
+    
+    # Zentrales Planungsjahr laden
+    configured_year = int(get_setting(db, "planning_year", str(date.today().year)))
+    request.state.planning_year = configured_year
+    
+    # Jahre berechnen: Vorjahr, Aktuelles Jahr und zwei Folgejahre
+    real_today_year = date.today().year
+    years = [real_today_year - 1, real_today_year, real_today_year + 1, real_today_year + 2]
+    
+    request.state.available_years = sorted(list(set(years)))
     
     # Kritische Projekte (Prio 1) für das Overlay laden
     critical_projects = []
@@ -104,6 +118,8 @@ async def add_global_data_to_request(request: Request, call_next):
 
 # Template Global Variables
 templates.env.globals["get_critical_projects"] = lambda request: request.state.critical_projects
+templates.env.globals["planning_year"] = lambda request: request.state.planning_year
+templates.env.globals["available_years"] = lambda request: request.state.available_years
 
 # --- Auth Routes ---
 @app.get("/login", response_class=HTMLResponse)
@@ -151,7 +167,12 @@ def ui_heatmap(request: Request, year: Optional[int] = None, team_id: Optional[i
     if not request.state.user:
         return RedirectResponse(url="/login")
     
-    if year is None: year = date.today().year
+    if year is None: 
+        real_today_year = date.today().year
+        if real_today_year in request.state.available_years:
+            year = real_today_year
+        else:
+            year = request.state.planning_year
     
     heatmap_data = get_annual_heatmap(year, db, team_id=team_id)
     teams = db.query(models.Team).all()
@@ -296,6 +317,22 @@ def ui_projects(request: Request, division: Optional[str] = None, show_completed
             "user": request.state.user,
             "selected_division": division,
             "show_completed": show_completed
+        }
+    )
+
+@app.get("/ui/projects/overdue", response_class=HTMLResponse)
+def ui_projects_overdue(request: Request, db: Session = Depends(get_db)):
+    from datetime import date
+    projects = db.query(models.Project).filter(
+        models.Project.end_date < date.today(),
+        models.Project.status != models.ProjectStatus.COMPLETED
+    ).order_by(models.Project.end_date).all()
+    
+    return templates.TemplateResponse(
+        request=request, name="projects_overdue.html", context={
+            "projects": projects, 
+            "active_page": "projects_overdue",
+            "title": "Überfällige Projekte"
         }
     )
 
@@ -735,6 +772,27 @@ def get_staffings(project_id: Optional[int] = None, db: Session = Depends(get_db
         query = query.filter(models.Staffing.project_id == project_id)
     return query.all()
 
+@app.get("/ui/settings", response_class=HTMLResponse)
+def ui_settings(request: Request, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
+    current_year = int(get_setting(db, "planning_year", str(date.today().year)))
+    return templates.TemplateResponse(
+        request=request, name="settings.html", context={
+            "active_page": "settings",
+            "current_planning_year": current_year
+        }
+    )
+
+@app.post("/ui/settings")
+def ui_save_settings(planning_year: str = Form(...), db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
+    setting = db.query(models.Setting).filter(models.Setting.key == "planning_year").first()
+    if not setting:
+        setting = models.Setting(key="planning_year", value=planning_year)
+        db.add(setting)
+    else:
+        setting.value = planning_year
+    db.commit()
+    return RedirectResponse(url="/ui/settings", status_code=status.HTTP_303_SEE_OTHER)
+
 @app.post("/seed/")
 def seed_database(db: Session = Depends(get_db)):
     # 1. Clear existing data
@@ -742,6 +800,7 @@ def seed_database(db: Session = Depends(get_db)):
     db.query(models.Booking).delete()
     db.query(models.Staffing).delete()
     db.query(models.ServiceAllocation).delete()
+    db.query(models.Setting).delete()
     db.query(models.Project).delete()
     db.query(models.Employee).delete()
     db.query(models.Role).delete()

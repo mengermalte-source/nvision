@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% set title = "System-Einstellungen" %}
+
+{% block content %}
+<div class="card">
+    <div style="margin-bottom: 2rem;">
+        <h2 style="margin: 0; font-size: 1.5rem;">System-Einstellungen</h2>
+        <p style="margin: 0.25rem 0 0; color: var(--text-muted); font-size: 0.9rem;">Konfigurieren Sie globale Parameter für die Planung.</p>
+    </div>
+
+    <form action="/ui/settings" method="post" style="max-width: 500px;">
+        <div class="form-group">
+            <label for="planning_year" class="form-label">Zentrales Planungsjahr</label>
+            <input type="number" id="planning_year" name="planning_year" class="form-control" value="{{ current_planning_year }}" required min="2000" max="2100">
+            <small style="display: block; margin-top: 0.5rem; color: var(--text-muted);">
+                Das Planungsjahr dient als Standard-Einstiegspunkt. In der Auswahl stehen immer das Vorjahr, das aktuelle Jahr und die zwei folgenden Jahre zur Verfügung.
+            </small>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary">Einstellungen speichern</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% set title = "Überfällige Projekte" %}
+
+{% block content %}
+<div class="card">
+    <div class="project-table-header">
+        <h2>Überfällige Projekte</h2>
+        <p class="text-muted">Projekte, deren geplantes Enddatum in der Vergangenheit liegt, aber noch nicht abgeschlossen sind.</p>
+    </div>
+
+    <div class="modern-table-wrapper">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>Projekt / Details</th>
+                    <th>Prio</th>
+                    <th>Status</th>
+                    <th>Enddatum (geplant)</th>
+                    <th style="text-align: right;">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in projects %}
+                <tr>
+                    <td>
+                        <div style="display: flex; flex-direction: column;">
+                            <a href="/ui/projects/{{ p.id }}" class="project-name-link">{{ p.name }}</a>
+                            <div style="margin-top: 0.35rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-weight: 600; font-size: 0.8rem; color: var(--text-muted);">#{{ p.id }}</span>
+                                {% if p.division %}
+                                    <span class="badge badge-default">{{ p.division }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if p.priority == 1 %}
+                            <span class="badge" style="background-color: #ef4444; color: white;">P1</span>
+                        {% elif p.priority == 2 %}
+                            <span class="badge" style="background-color: #f59e0b; color: white;">P2</span>
+                        {% elif p.priority == 3 %}
+                            <span class="badge" style="background-color: #3b82f6; color: white;">P3</span>
+                        {% else %}
+                            <span class="badge badge-default">P{{ p.priority }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge status-{{ p.status.value.replace('_', '-') }}">
+                            {{ 'PLANUNG' if p.status.value == 'planning' else 'AKTIV' if p.status.value == 'active' else 'ON HOLD' if p.status.value == 'on_hold' else 'ABGESCHLOSSEN' if p.status.value == 'completed' else p.status.value }}
+                        </span>
+                    </td>
+                    <td style="color: var(--danger); font-weight: bold;">
+                        {{ p.end_date.strftime('%d.%m.%Y') }}
+                    </td>
+                    <td style="text-align: right;">
+                        <a href="/ui/projects/{{ p.id }}" class="btn btn-small">Details</a>
+                        {% if request.state.user and request.state.user.role.value == 'admin' %}
+                        <form action="/ui/projects/{{ p.id }}/complete" method="post" style="display: inline;" onsubmit="return confirm('Projekt als abgeschlossen markieren?')">
+                            <button type="submit" class="btn btn-small" style="background-color: var(--success); color: white; border: none;">Abschließen</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        Keine überfälligen Projekte gefunden. Alles im Plan!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

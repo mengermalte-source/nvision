@@ -26,18 +26,6 @@
     </div>
 
     <div class="charts-grid">
-        <div class="chart-container card" onclick="showReportDefinition('Projekt-Status Verteilung')">
-            <h3>Projekt-Status Verteilung <span class="info-icon">ⓘ</span></h3>
-            <canvas id="statusChart"></canvas>
-        </div>
-        <div class="chart-container card" onclick="showReportDefinition('Ressourcen-Auslastung')">
-            <h3>Ressourcen-Auslastung (Plan %) <span class="info-icon">ⓘ</span></h3>
-            <canvas id="utilizationChart"></canvas>
-        </div>
-        <div class="chart-container card" onclick="showReportDefinition('Projekte nach Bereich')">
-            <h3>Projekte nach Bereich <span class="info-icon">ⓘ</span></h3>
-            <canvas id="divisionChart"></canvas>
-        </div>
         <div class="chart-container card" onclick="showReportDefinition('Top 5 Kritische Projekte')">
             <h3>Top 5 Kritische Projekte <span class="info-icon">ⓘ</span></h3>
             <div class="top-list">
@@ -71,6 +59,18 @@
                 <div class="stat-label" style="text-align: center; padding: 2rem;">Keine Schläferprojekte aktuell.</div>
                 {% endif %}
             </div>
+        </div>
+        <div class="chart-container card" onclick="showReportDefinition('Projekt-Status Verteilung')">
+            <h3>Projekt-Status Verteilung <span class="info-icon">ⓘ</span></h3>
+            <canvas id="statusChart"></canvas>
+        </div>
+        <div class="chart-container card" onclick="showReportDefinition('Ressourcen-Auslastung')">
+            <h3>Ressourcen-Auslastung (Plan %) <span class="info-icon">ⓘ</span></h3>
+            <canvas id="utilizationChart"></canvas>
+        </div>
+        <div class="chart-container card" onclick="showReportDefinition('Projekte nach Bereich')">
+            <h3>Projekte nach Bereich <span class="info-icon">ⓘ</span></h3>
+            <canvas id="divisionChart"></canvas>
         </div>
     </div>
 </div>
