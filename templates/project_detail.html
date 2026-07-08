@@ -23,8 +23,7 @@
             {% else %}
                 <span class="badge badge-default">Priorität {{ project.priority }}</span>
             {% endif %}
-            <span class="badge badge-default">{{ project.status.value }}</span>
-            <span class="badge badge-default">{{ project.methodology.value }}</span>
+            <span class="badge status-{{ project.status.value.replace('_', '-') }}">{{ 'PLANUNG' if project.status.value == 'planning' else 'AKTIV' if project.status.value == 'active' else 'ON HOLD' if project.status.value == 'on_hold' else 'ABGESCHLOSSEN' if project.status.value == 'completed' else project.status.value }}</span>
         </div>
     </div>
     <div class="action-buttons" style="display: flex; gap: 0.75rem;">
@@ -82,6 +81,10 @@
                     <span class="badge badge-warning">Ausstehend</span>
                     {% endif %}
                 </div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Gebuchte Ist-Stunden</div>
+                <div class="detail-value-large">{{ project.bookings | sum(attribute='hours') }} h</div>
             </div>
         </div>
 
@@ -181,6 +184,89 @@ gantt
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Geplante Mitarbeiter & Buchungen -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <!-- Geplante Mitarbeiter -->
+        <div class="card" style="margin-bottom: 0;">
+            <div class="section-header">
+                <h2>Geplante Mitarbeiter</h2>
+                {% if request.state.user and request.state.user.role.value == 'admin' %}
+                <a href="/ui/staffing/add?project_id={{ project.id }}" class="btn btn-primary btn-small">+ Planen</a>
+                {% endif %}
+            </div>
+            <div class="modern-table-wrapper">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Mitarbeiter</th>
+                            <th>Zeitraum</th>
+                            <th>FTE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in project.staffings | sort(attribute='start_date') %}
+                        <tr>
+                            <td style="font-weight: 600;">{{ s.employee.name }}</td>
+                            <td style="font-size: 0.85rem; color: var(--text-muted);">{{ s.start_date }} - {{ s.end_date }}</td>
+                            <td><span class="badge badge-default">{{ s.capacity_fte }} FTE</span></td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                                Keine Mitarbeiter geplant.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Buchungen -->
+        <div class="card" style="margin-bottom: 0;">
+            <div class="section-header">
+                <h2>Letzte Buchungen</h2>
+                <a href="/ui/bookings?project_id={{ project.id }}" class="btn btn-primary btn-small">+ Buchen</a>
+            </div>
+            <div class="modern-table-wrapper">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Mitarbeiter</th>
+                            <th>Std.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in project.bookings | sort(attribute='date', reverse=True) %}
+                        {% if loop.index <= 10 %}
+                        <tr>
+                            <td style="font-size: 0.85rem;">{{ b.date }}</td>
+                            <td style="font-weight: 600;">{{ b.employee.name }}</td>
+                            <td><strong>{{ b.hours }}</strong></td>
+                        </tr>
+                        {% endif %}
+                        {% else %}
+                        <tr>
+                            <td colspan="3" style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                                Keine Buchungen vorhanden.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if project.bookings %}
+                    <tfoot>
+                        <tr style="background-color: var(--bg-light); font-weight: 700;">
+                            <td colspan="2" style="text-align: right;">Gesamt:</td>
+                            <td>{{ project.bookings | sum(attribute='hours') }} h</td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
         </div>
     </div>
 </div>

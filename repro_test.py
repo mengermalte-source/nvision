@@ -13,7 +13,7 @@ def test_nvision():
     print(f"Role created: {role}")
 
     # 3. Create Employee
-    resource = requests.post(f"{BASE_URL}/resources/", json={
+    resource = requests.post(f"{BASE_URL}/employees/", json={
         "name": "Max Mustermann",
         "type": "internal",
         "weekly_hours": 40.0,

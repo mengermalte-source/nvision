@@ -3,7 +3,7 @@ import random
 import csv
 import io
 from fastapi import FastAPI, Depends, HTTPException, Query, Form, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, func
@@ -85,12 +85,25 @@ def admin_required(user: models.User = Depends(get_current_user)):
 
 # Context Processor for templates
 @app.middleware("http")
-async def add_user_to_request(request: Request, call_next):
+async def add_global_data_to_request(request: Request, call_next):
     db = SessionLocal()
     request.state.user = await get_current_user(request, db)
+    
+    # Kritische Projekte (Prio 1) für das Overlay laden
+    critical_projects = []
+    if request.state.user:
+        critical_projects = db.query(models.Project).filter(
+            models.Project.priority == 1,
+            models.Project.status != models.ProjectStatus.COMPLETED
+        ).order_by(models.Project.end_date.asc()).all()
+    request.state.critical_projects = critical_projects
+    
     db.close()
     response = await call_next(request)
     return response
+
+# Template Global Variables
+templates.env.globals["get_critical_projects"] = lambda request: request.state.critical_projects
 
 # --- Auth Routes ---
 @app.get("/login", response_class=HTMLResponse)
@@ -134,17 +147,21 @@ def calculate_project_progress(project: models.Project, db: Session):
 # --- UI Routes ---
 
 @app.get("/", response_class=HTMLResponse)
-def ui_heatmap(request: Request, year: Optional[int] = None, db: Session = Depends(get_db)):
+def ui_heatmap(request: Request, year: Optional[int] = None, team_id: Optional[int] = Query(None), db: Session = Depends(get_db)):
     if not request.state.user:
         return RedirectResponse(url="/login")
     
     if year is None: year = date.today().year
     
-    heatmap_data = get_annual_heatmap(year, db)
+    heatmap_data = get_annual_heatmap(year, db, team_id=team_id)
+    teams = db.query(models.Team).all()
+    
     return templates.TemplateResponse(
         request=request, name="heatmap.html", context={
             "heatmap": heatmap_data, 
             "year": year,
+            "teams": teams,
+            "selected_team_id": team_id,
             "active_page": "heatmap",
             "user": request.state.user
         }
@@ -197,8 +214,11 @@ def get_capacity_detail(employee_id: int, year: int, month: int, db: Session = D
         free_capacity_fte=total_cap - service_cap - staffed_cap
     )
 
-def get_annual_heatmap(year: int, db: Session):
-    employees = db.query(models.Employee).all()
+def get_annual_heatmap(year: int, db: Session, team_id: Optional[int] = None):
+    query = db.query(models.Employee)
+    if team_id:
+        query = query.filter(models.Employee.team_id == team_id)
+    employees = query.all()
     results = []
     
     for emp in employees:
@@ -280,7 +300,7 @@ def ui_projects(request: Request, division: Optional[str] = None, show_completed
     )
 
 @app.get("/ui/bookings", response_class=HTMLResponse)
-def ui_bookings(request: Request, db: Session = Depends(get_db)):
+def ui_bookings(request: Request, project_id: Optional[int] = Query(None), db: Session = Depends(get_db)):
     if not request.state.user or request.state.user.role != models.UserRole.EMPLOYEE:
         return RedirectResponse(url="/")
     
@@ -296,7 +316,8 @@ def ui_bookings(request: Request, db: Session = Depends(get_db)):
             "bookings": bookings,
             "today": date.today().isoformat(),
             "active_page": "bookings",
-            "user": request.state.user
+            "user": request.state.user,
+            "selected_project_id": project_id
         }
     )
 
@@ -336,7 +357,6 @@ def ui_add_project_form(request: Request):
 def ui_add_project(
     name: str = Form(...),
     description: Optional[str] = Form(None),
-    methodology: models.ProjectMethodology = Form(models.ProjectMethodology.CLASSIC),
     business_value: Optional[str] = Form(None),
     internal_number: Optional[str] = Form(None),
     division: Optional[str] = Form(None),
@@ -356,7 +376,6 @@ def ui_add_project(
     db_project = models.Project(
         name=name,
         description=description,
-        methodology=methodology,
         business_value=business_value,
         internal_number=internal_number,
         division=division,
@@ -393,7 +412,6 @@ def ui_edit_project(
     project_id: int,
     name: str = Form(...),
     description: Optional[str] = Form(None),
-    methodology: models.ProjectMethodology = Form(models.ProjectMethodology.CLASSIC),
     business_value: Optional[str] = Form(None),
     internal_number: Optional[str] = Form(None),
     division: Optional[str] = Form(None),
@@ -416,7 +434,6 @@ def ui_edit_project(
     
     project.name = name
     project.description = description
-    project.methodology = methodology
     project.business_value = business_value
     project.internal_number = internal_number
     project.division = division
@@ -432,6 +449,16 @@ def ui_edit_project(
     project.pt_intern_planned = pt_intern_planned
     project.pt_extern_planned = pt_extern_planned
     
+    db.commit()
+    return RedirectResponse(url="/ui/projects", status_code=303)
+
+@app.post("/ui/projects/{project_id}/status")
+def ui_update_project_status(project_id: int, status: models.ProjectStatus = Form(...), db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    project.status = status
     db.commit()
     return RedirectResponse(url="/ui/projects", status_code=303)
 
@@ -557,6 +584,8 @@ def ui_update_employee_plan(
 def ui_staffing_add_form(request: Request, project_id: int, db: Session = Depends(get_db)):
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     employees = db.query(models.Employee).all()
+    teams = db.query(models.Team).all()
+    roles = db.query(models.Role).all()
     
     # Auslastung für jeden Mitarbeiter im Projektzeitraum berechnen
     employee_data = []
@@ -583,7 +612,9 @@ def ui_staffing_add_form(request: Request, project_id: int, db: Session = Depend
     return templates.TemplateResponse(
         request=request, name="staffing_add.html", context={
             "project": project,
-            "employee_data": employee_data
+            "employee_data": employee_data,
+            "teams": teams,
+            "roles": roles
         }
     )
 
@@ -895,6 +926,9 @@ P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Au
     
     divisions = ["IT", "Netzgesellschaft", "Vertrieb", "Kraftwerk"]
     
+    # Mitarbeiter-Namen für Zuweisung zu verantwortlichen Rollen
+    employee_names = [emp.name for emp in all_employees]
+    
     for i, row in enumerate(reader):
         # Mapping rules
         name = row['name']
@@ -937,7 +971,6 @@ P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Au
         p = models.Project(
             name=name,
             description=f"Automatischer Import für Projekt {name}.",
-            methodology=models.ProjectMethodology.AGILE if i % 2 == 0 else models.ProjectMethodology.CLASSIC,
             business_value="Hoher strategischer Wert für die Digitalisierungsstrategie.",
             internal_number=internal_number,
             division=division,
@@ -945,8 +978,8 @@ P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Au
             priority=priority,
             start_date=date(2026, 1, 1),
             end_date=date(2026, 12, 31),
-            responsible_it=row['responsible_it'],
-            responsible_fb=row['responsible_business'],
+            responsible_it=random.choice(employee_names) if row['responsible_it'] else None,
+            responsible_fb=random.choice(employee_names) if row['responsible_business'] else None,
             cats_number=row['cats_order'],
             pab_approval=1 if "ja" in status_raw else 0,
             pt_intern_planned=pt_intern,
@@ -1175,6 +1208,104 @@ def get_heatmap(year: int, month: int, db: Session = Depends(get_db)):
         ))
         
     return results
+
+@app.get("/ui/reports", response_class=HTMLResponse)
+def ui_reports(request: Request, db: Session = Depends(get_db)):
+    if not request.state.user:
+        return RedirectResponse(url="/login")
+    # 1. Projekt-Status-Verteilung
+    status_counts = db.query(models.Project.status, func.count(models.Project.id)).group_by(models.Project.status).all()
+    status_data = {s.value if hasattr(s, 'value') else str(s): count for s, count in status_counts}
+    
+    # 2. Projekte mit kritischem Zeitverzug oder Budget-Überschreitung (Fortschritt > Zeit)
+    all_projects = db.query(models.Project).filter(models.Project.status != models.ProjectStatus.COMPLETED).all()
+    critical_projects = []
+    
+    today = date.today()
+    for p in all_projects:
+        # Berechne zeitlichen Fortschritt
+        total_days = (p.end_date - p.start_date).days
+        if total_days > 0:
+            elapsed_days = (today - p.start_date).days
+            time_progress = max(0, min(100, (elapsed_days / total_days) * 100))
+        else:
+            time_progress = 100
+
+        # Berechne IST-Stunden
+        total_booked = db.query(func.sum(models.Booking.hours)).filter(models.Booking.project_id == p.id).scalar() or 0.0
+        
+        # Berechne geplante Stunden (8h pro PT)
+        planned_hours = (p.pt_intern_planned + p.pt_extern_planned) * 8.0
+        
+        # Fortschritt (basierend auf Stunden)
+        work_progress = (total_booked / planned_hours * 100) if planned_hours > 0 else (100 if total_booked > 0 else 0)
+        
+        if work_progress > time_progress + 10: # Mehr als 10% Abweichung
+            critical_projects.append({
+                "name": p.name,
+                "work_progress": round(work_progress, 1),
+                "time_progress": round(time_progress, 1),
+                "diff": round(work_progress - time_progress, 1)
+            })
+            
+    # Sortiere nach höchster Abweichung
+    critical_projects = sorted(critical_projects, key=lambda x: x["diff"], reverse=True)[:5]
+    
+    # 3. Auslastung über die nächsten 6 Monate (vereinfacht)
+    today = date.today()
+    months = []
+    utilization = []
+    
+    # Hole alle Mitarbeiter für Kapazitätsberechnung
+    total_employees = db.query(models.Employee).count()
+    total_capacity_fte = db.query(func.sum(models.Employee.weekly_hours)).scalar() or 0
+    total_capacity_fte = total_capacity_fte / 40.0
+    
+    for i in range(6):
+        target_date = today + timedelta(days=i*30)
+        month_name = target_date.strftime("%b %y")
+        months.append(month_name)
+        
+        # Staffing in diesem Monat
+        first_day = target_date.replace(day=1)
+        last_day = target_date.replace(day=calendar.monthrange(target_date.year, target_date.month)[1])
+        
+        staffed_sum = db.query(func.sum(models.Staffing.capacity_fte)).filter(
+            models.Staffing.start_date <= last_day,
+            models.Staffing.end_date >= first_day
+        ).scalar() or 0.0
+        
+        utilization.append(round((staffed_sum / total_capacity_fte * 100) if total_capacity_fte > 0 else 0, 1))
+
+    # 4. Division Verteilung
+    division_counts = db.query(models.Project.division, func.count(models.Project.id)).group_by(models.Project.division).all()
+    division_data = {str(d) if d else "Unbekannt": count for d, count in division_counts}
+
+    definitions = {
+        "Projekte Gesamt": "Die Gesamtzahl aller Projekte im System (Planung, Aktiv, On Hold, Abgeschlossen).",
+        "Aktive Projekte": "Projekte, die sich aktuell in der Umsetzung befinden (Status 'active').",
+        "Aktuelle Auslastung": "Verhältnis der für den aktuellen Monat geplanten Personal-Kapazitäten (FTE) zur verfügbaren Gesamtkapazität der Mitarbeiter.",
+        "Kritische Projekte": "Projekte, bei denen der Ressourcenverbrauch (Ist-Stunden) den zeitlichen Fortschritt um mehr als 10% übersteigt.",
+        "Projekt-Status Verteilung": "Grafische Darstellung der Projekte aufgeteilt nach ihrem aktuellen Lebenszyklus-Status.",
+        "Ressourcen-Auslastung": "Trend der geplanten Auslastung (Staffing) über die nächsten 6 Monate im Verhältnis zur Gesamtkapazität.",
+        "Projekte nach Bereich": "Anzahl der Projekte gruppiert nach Fachbereichen (IT, Netzgesellschaft, etc.).",
+        "Top 5 Kritische Projekte": "Liste der Projekte mit der höchsten negativen Abweichung zwischen Arbeitsfortschritt und Zeitverlauf."
+    }
+
+    context = {
+        "request": request,
+        "active_page": "reports",
+        "title": "Management Reports",
+        "status_data": status_data,
+        "critical_projects": critical_projects,
+        "months": months,
+        "utilization": utilization,
+        "division_data": division_data,
+        "total_projects": db.query(models.Project).count(),
+        "active_projects": db.query(models.Project).filter(models.Project.status == models.ProjectStatus.ACTIVE).count(),
+        "definitions": definitions
+    }
+    return templates.TemplateResponse(request=request, name="reports.html", context=context)
 
 # Serve static files
 app.mount("/static", StaticFiles(directory="static"), name="static")

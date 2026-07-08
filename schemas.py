@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import date, datetime
 from typing import Optional, List
-from models import ResourceType, ProjectStatus, UserRole, ProjectMethodology
+from models import ResourceType, ProjectStatus, UserRole
 
 class MilestoneBase(BaseModel):
     name: str
@@ -84,7 +84,6 @@ class Employee(EmployeeBase):
 class ProjectBase(BaseModel):
     name: str
     description: Optional[str] = None
-    methodology: ProjectMethodology = ProjectMethodology.CLASSIC
     business_value: Optional[str] = None
     internal_number: Optional[str] = None
     division: Optional[str] = None

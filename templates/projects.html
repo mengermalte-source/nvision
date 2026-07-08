@@ -46,7 +46,7 @@
                 <tr>
                     <th>Projekt / Details</th>
                     <th>Prio</th>
-                    <th>Methodik / Status</th>
+                    <th>Status</th>
                     <th>Verantwortlich</th>
                     <th>Zeitraum</th>
                     <th>Fortschritt</th>
@@ -93,8 +93,20 @@
                     </td>
                     <td>
                         <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                            <span class="badge badge-default" style="align-self: flex-start;">{{ p.methodology.value }}</span>
-                            <span class="badge badge-default" style="align-self: flex-start;">{{ p.status.value }}</span>
+                            {% if request.state.user and request.state.user.role.value == 'admin' %}
+                            <form action="/ui/projects/{{ p.id }}/status" method="post" id="status-form-{{ p.id }}">
+                                <select name="status" class="badge status-{{ p.status.value.replace('_', '-') }}" 
+                                        style="align-self: flex-start; border: none; cursor: pointer; appearance: none; -webkit-appearance: none; padding-right: 1.5rem; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 0.5rem top 50%; background-size: 0.65rem auto;"
+                                        onchange="this.form.submit()">
+                                    <option value="planning" {% if p.status.value == "planning" %}selected{% endif %}>PLANUNG</option>
+                                    <option value="active" {% if p.status.value == "active" %}selected{% endif %}>AKTIV</option>
+                                    <option value="on_hold" {% if p.status.value == "on_hold" %}selected{% endif %}>ON HOLD</option>
+                                    <option value="completed" {% if p.status.value == "completed" %}selected{% endif %}>ABGESCHLOSSEN</option>
+                                </select>
+                            </form>
+                            {% else %}
+                            <span class="badge status-{{ p.status.value.replace('_', '-') }}" style="align-self: flex-start;">{{ 'PLANUNG' if p.status.value == 'planning' else 'AKTIV' if p.status.value == 'active' else 'ON HOLD' if p.status.value == 'on_hold' else 'ABGESCHLOSSEN' if p.status.value == 'completed' else p.status.value }}</span>
+                            {% endif %}
                         </div>
                     </td>
                     <td>
@@ -139,11 +151,6 @@
                             {% if request.state.user and request.state.user.role.value == 'admin' %}
                             <a href="/ui/projects/{{ p.id }}/edit" class="btn btn-small btn-edit" title="Bearbeiten">Edit</a>
                             <a href="/ui/staffing/add?project_id={{ p.id }}" class="btn btn-small btn-staffing" title="Staffing">Staff</a>
-                            {% if p.status.value != 'completed' %}
-                            <form action="/ui/projects/{{ p.id }}/complete" method="post" style="display: inline;">
-                                <button type="submit" class="btn btn-small" style="background-color: var(--secondary-color); color: white;" onclick="return confirm('Projekt wirklich abschließen?')">Abschließen</button>
-                            </form>
-                            {% endif %}
                             {% endif %}
                             {% if request.state.user and request.state.user.role.value == 'employee' %}
                             {% if p.status.value != 'completed' %}

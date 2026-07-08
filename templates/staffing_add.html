@@ -13,7 +13,51 @@
         <a href="/ui/projects" class="btn btn-outline">Abbrechen</a>
     </div>
 
-    <form action="/ui/staffing/bulk_add" method="post">
+    <!-- Aktuelle Auswahl (Stuffed) -->
+    <div id="selection-summary" style="margin-bottom: 1.5rem; padding: 1rem; background-color: #f8fafc; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="flex: 1;">
+                <div style="font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem; color: #64748b;">Ausgewähltes Personal:</div>
+                <div id="selected-badges" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    <!-- Badges werden via JS eingefügt -->
+                </div>
+            </div>
+            <div style="margin-left: 1rem;">
+                <button type="button" onclick="document.getElementById('staffing-form').submit()" class="btn btn-primary" style="white-space: nowrap; padding: 0.6rem 1.5rem;">Hinzufügen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <div id="filter-section">
+        <div class="tabs">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div id="team-tabs">
+                    <a href="#" class="tab-item active" data-team="" onclick="selectTeamTab(this); return false;">Alle Teams</a>
+                    {% for team in teams %}
+                    <a href="#" class="tab-item" data-team="{{ team.name }}" onclick="selectTeamTab(this); return false;">{{ team.name }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; background: #fff; padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <div style="font-weight: 600; font-size: 0.9rem;">Weitere Filter:</div>
+            <div style="flex: 1;">
+                <select id="filter-role" onchange="applyFilters()" class="form-input-small" style="width: 100%;">
+                    <option value="">Alle Rollen</option>
+                    {% for role in roles %}
+                    <option value="{{ role.name }}">{{ role.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <input type="text" id="filter-name" onkeyup="applyFilters()" placeholder="Name suchen..." class="form-input-small" style="width: 100%;">
+            </div>
+        </div>
+    </div>
+
+    <form action="/ui/staffing/bulk_add" method="post" id="staffing-form">
         <input type="hidden" name="project_id" value="{{ project.id }}">
         
         <div class="modern-table-wrapper">
@@ -32,7 +76,10 @@
                 <tbody>
                     {% for item in employee_data %}
                     {% set emp = item.emp %}
-                    <tr id="row_{{ emp.id }}">
+                    <tr id="row_{{ emp.id }}" 
+                        data-name="{{ emp.name|lower }}" 
+                        data-team="{{ emp.team.name if emp.team else '' }}" 
+                        data-role="{{ emp.role.name if emp.role else '' }}">
                         <td style="text-align: center;">
                             <input type="checkbox" name="selected_employees" value="{{ emp.id }}" id="emp_{{ emp.id }}" 
                                    onchange="toggleInputs('{{ emp.id }}')" style="width: 18px; height: 18px; cursor: pointer;">
@@ -63,17 +110,17 @@
                         </td>
                         <td>
                             <input type="date" name="start_date_{{ emp.id }}" id="start_{{ emp.id }}" 
-                                   value="{{ project.start_date }}" disabled 
+                                   value="" disabled 
                                    class="form-input-small">
                         </td>
                         <td>
                             <input type="date" name="end_date_{{ emp.id }}" id="end_{{ emp.id }}" 
-                                   value="{{ project.end_date }}" disabled
+                                   value="" disabled
                                    class="form-input-small">
                         </td>
                         <td>
                             <input type="number" name="capacity_fte_{{ emp.id }}" id="fte_{{ emp.id }}" 
-                                   value="1.0" step="0.1" min="0" max="2.0" disabled
+                                   value="" step="0.1" min="0" max="2.0" disabled
                                    class="form-input-small">
                         </td>
                     </tr>
@@ -82,7 +129,8 @@
             </table>
         </div>
 
-        <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+        <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
+            <a href="/ui/projects" class="btn btn-outline" style="padding: 0.75rem 2rem;">Abbrechen</a>
             <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2.5rem;">Ausgewählte Mitarbeiter hinzufügen</button>
         </div>
     </form>
@@ -107,6 +155,12 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+#selection-summary {
+    position: sticky;
+    top: 1rem;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
 </style>
 
 <script>
@@ -116,15 +170,29 @@ function toggleInputs(empId) {
     const endInput = document.getElementById('end_' + empId);
     const fteInput = document.getElementById('fte_' + empId);
     
-    startInput.disabled = !isChecked;
-    endInput.disabled = !isChecked;
-    fteInput.disabled = !isChecked;
-    
     if (isChecked) {
+        startInput.disabled = false;
+        endInput.disabled = false;
+        fteInput.disabled = false;
+        
+        if (startInput.value === "") {
+            startInput.value = "{{ project.start_date }}";
+        }
+        if (endInput.value === "") {
+            endInput.value = "{{ project.end_date }}";
+        }
+        if (fteInput.value === "") {
+            fteInput.value = "1.0";
+        }
+        
         startInput.style.backgroundColor = 'white';
         endInput.style.backgroundColor = 'white';
         fteInput.style.backgroundColor = 'white';
     } else {
+        startInput.disabled = true;
+        endInput.disabled = true;
+        fteInput.disabled = true;
+        
         startInput.style.backgroundColor = '#f8fafc';
         endInput.style.backgroundColor = '#f8fafc';
         fteInput.style.backgroundColor = '#f8fafc';
@@ -138,6 +206,87 @@ function toggleInputs(empId) {
     }
     
     updateUtilization(empId);
+    updateSelectionSummary();
+}
+
+function selectTeamTab(element) {
+    document.querySelectorAll('#team-tabs .tab-item').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    element.classList.add('active');
+    applyFilters();
+}
+
+function applyFilters() {
+    const activeTeamTab = document.querySelector('#team-tabs .tab-item.active');
+    const team = activeTeamTab ? activeTeamTab.getAttribute('data-team') : "";
+    const role = document.getElementById('filter-role').value;
+    const name = document.getElementById('filter-name').value.toLowerCase();
+    
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const rowName = row.getAttribute('data-name');
+        const rowTeam = row.getAttribute('data-team');
+        const rowRole = row.getAttribute('data-role');
+        
+        const teamMatch = team === "" || rowTeam === team;
+        const roleMatch = role === "" || rowRole === role;
+        const nameMatch = name === "" || rowName.includes(name);
+        
+        if (teamMatch && roleMatch && nameMatch) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function updateSelectionSummary() {
+    const summaryDiv = document.getElementById('selection-summary');
+    const badgeContainer = document.getElementById('selected-badges');
+    const filterSection = document.getElementById('filter-section');
+    const checked = document.querySelectorAll('input[name="selected_employees"]:checked');
+    
+    badgeContainer.innerHTML = '';
+    
+    if (checked.length > 0) {
+        summaryDiv.style.display = 'block';
+        if (filterSection) filterSection.style.marginTop = '0';
+        checked.forEach(cb => {
+            const empId = cb.value;
+            const row = document.getElementById('row_' + empId);
+            const name = row.querySelector('label').innerText;
+            const fte = document.getElementById('fte_' + empId).value;
+            
+            const badge = document.createElement('div');
+            badge.style.backgroundColor = '#e2e8f0';
+            badge.style.color = '#1e293b';
+            badge.style.padding = '0.25rem 0.75rem';
+            badge.style.borderRadius = '9999px';
+            badge.style.fontSize = '0.8rem';
+            badge.style.fontWeight = '600';
+            badge.style.display = 'flex';
+            badge.style.alignItems = 'center';
+            badge.style.gap = '0.5rem';
+            
+            badge.innerHTML = `${name} <span style="color: #64748b; font-weight: 400;">(${fte} FTE)</span>`;
+            
+            const removeBtn = document.createElement('span');
+            removeBtn.innerHTML = '&times;';
+            removeBtn.style.cursor = 'pointer';
+            removeBtn.style.fontSize = '1.1rem';
+            removeBtn.onclick = () => {
+                cb.checked = false;
+                toggleInputs(empId);
+            };
+            badge.appendChild(removeBtn);
+            
+            badgeContainer.appendChild(badge);
+        });
+    } else {
+        summaryDiv.style.display = 'none';
+        if (filterSection) filterSection.style.marginTop = '0';
+    }
 }
 
 function updateUtilization(empId) {
@@ -150,7 +299,11 @@ function updateUtilization(empId) {
     
     const baseUtil = parseFloat(utilSpan.getAttribute('data-base-util'));
     const totalCap = parseFloat(utilSpan.getAttribute('data-total-cap'));
-    const newFte = isChecked ? parseFloat(fteInput.value) || 0 : 0;
+    
+    let newFte = 0;
+    if (isChecked) {
+        newFte = parseFloat(fteInput.value) || 0;
+    }
     
     const totalFteUsed = (baseUtil / 100 * totalCap) + newFte;
     const newPercent = totalCap > 0 ? Math.round(totalFteUsed / totalCap * 100) : 0;
@@ -166,6 +319,11 @@ function updateUtilization(empId) {
         color = '#f59e0b';
     }
     utilSpan.parentElement.style.color = color;
+    
+    // Auch die Zusammenfassung aktualisieren, falls FTE geändert wurde
+    if (isChecked) {
+        updateSelectionSummary();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {

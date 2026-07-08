@@ -9,8 +9,19 @@
             <p style="margin: 0.25rem 0 0; color: var(--text-muted); font-size: 0.9rem;">Übersicht der freien Kapazitäten pro Mitarbeiter in FTE für {{ year }}</p>
         </div>
         <div class="action-buttons">
-            <a href="/?year={{ year - 1 }}" class="btn btn-outline">&laquo; {{ year - 1 }}</a>
-            <a href="/?year={{ year + 1 }}" class="btn btn-outline">{{ year + 1 }} &raquo;</a>
+            <a href="/?year={{ year - 1 }}{% if selected_team_id %}&team_id={{ selected_team_id }}{% endif %}" class="btn btn-outline">&laquo; {{ year - 1 }}</a>
+            <a href="/?year={{ year + 1 }}{% if selected_team_id %}&team_id={{ selected_team_id }}{% endif %}" class="btn btn-outline">{{ year + 1 }} &raquo;</a>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div>
+                <a href="/?year={{ year }}" class="tab-item {% if not selected_team_id %}active{% endif %}">Alle</a>
+                {% for team in teams %}
+                <a href="/?year={{ year }}&team_id={{ team.id }}" class="tab-item {% if selected_team_id == team.id %}active{% endif %}">{{ team.name }}</a>
+                {% endfor %}
+            </div>
         </div>
     </div>
 

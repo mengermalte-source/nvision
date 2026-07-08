@@ -25,6 +25,10 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-icon"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                     <span>Projekte</span>
                 </a>
+                <a href="/ui/reports" class="{% if active_page == 'reports' %}active{% endif %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-icon"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+                    <span>Reports</span>
+                </a>
                 {% if request.state.user and request.state.user.role.value == 'admin' %}
                 <a href="/ui/projects/add" class="{% if active_page == 'project_add' %}active{% endif %}">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-icon"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
@@ -34,6 +38,12 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-icon"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     <span>Mitarbeiter</span>
                 </a>
+                <form action="/seed/" method="post" style="display: block;">
+                    <button type="submit" class="nav-button-link" style="color: var(--warning);" onclick="return confirm('Sicher? Alle aktuellen Daten gehen verloren und werden durch Testdaten ersetzt.')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-icon"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                        <span>Daten resetten</span>
+                    </button>
+                </form>
                 {% endif %}
                 {% if request.state.user and request.state.user.role.value == 'employee' %}
                 <a href="/ui/bookings" class="{% if active_page == 'bookings' %}active{% endif %}">
@@ -43,17 +53,6 @@
                 {% endif %}
             </div>
 
-            {% if request.state.user and request.state.user.role.value == 'admin' %}
-            <div class="nav-group">
-                <span class="nav-label">System</span>
-                <form action="/seed/" method="post" style="padding: 0 0.25rem;">
-                    <button type="submit" class="btn btn-outline" style="width: 100%; font-size: 0.8rem; background: var(--primary-light); color: var(--primary-dark); border-color: var(--border-color);" onclick="return confirm('Alle Daten löschen und Testdaten laden?')">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
-                        Datenbank seeden
-                    </button>
-                </form>
-            </div>
-            {% endif %}
 
             <div class="nav-group" style="margin-top: auto;">
                 <a href="/logout" style="color: var(--danger);">
@@ -71,6 +70,15 @@
             </button>
             <h1 class="page-title">{{ title if title else "N-VISION" }}</h1>
             <div class="user-info" style="display: flex; align-items: center; gap: 1rem;">
+                {% if request.state.user %}
+                {% set criticals = get_critical_projects(request) %}
+                <button class="critical-trigger" id="criticalTrigger" title="Kritische Projekte">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+                    {% if criticals|length > 0 %}
+                    <span class="critical-badge">{{ criticals|length }}</span>
+                    {% endif %}
+                </button>
+                {% endif %}
                 <span>{{ request.state.user.username if request.state.user else "Gast" }} ({{ request.state.user.role.value if request.state.user else "" }})</span>
             </div>
         </header>
@@ -80,6 +88,41 @@
         </main>
     </div>
 </div>
+
+{% if request.state.user %}
+<!-- Critical Projects Overlay -->
+<div class="modal-overlay" id="criticalOverlay">
+    <div class="modal-content critical-modal">
+        <div class="modal-header">
+            <h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger); vertical-align: middle; margin-right: 8px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>Kritische Projekte (Prio 1)</h3>
+            <button class="close-modal" id="closeCritical">&times;</button>
+        </div>
+        <div class="modal-body">
+            {% set criticals = get_critical_projects(request) %}
+            {% if criticals|length > 0 %}
+                <ul class="critical-list">
+                    {% for p in criticals %}
+                    <li class="critical-item">
+                        <div class="critical-item-info">
+                            <a href="/ui/projects/{{ p.id }}" class="critical-project-name">{{ p.name }}</a>
+                            <div class="critical-project-meta">
+                                <span class="badge status-{{ p.status.value.replace('_', '-') }}">{{ 'PLANUNG' if p.status.value == 'planning' else 'AKTIV' if p.status.value == 'active' else 'ON HOLD' if p.status.value == 'on_hold' else 'ABGESCHLOSSEN' if p.status.value == 'completed' else p.status.value }}</span>
+                                <small>Ende: {{ p.end_date }}</small>
+                            </div>
+                        </div>
+                        <div class="critical-item-actions">
+                            <a href="/ui/projects/{{ p.id }}" class="btn btn-small">Details</a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p style="text-align: center; color: var(--text-muted); padding: 2rem 0;">Keine kritischen Projekte aktuell.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
 {% block scripts %}{% endblock %}
 </body>
 </html>

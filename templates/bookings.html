@@ -10,7 +10,7 @@
             <select name="project_id" required>
                 <option value="">-- Projekt wählen --</option>
                 {% for p in assigned_projects %}
-                <option value="{{ p.id }}">
+                <option value="{{ p.id }}" {% if selected_project_id == p.id %}selected{% endif %}>
                     {{ p.name }}
                 </option>
                 {% endfor %}

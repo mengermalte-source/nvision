@@ -68,16 +68,11 @@ class Division(enum.Enum):
     VERTRIEB = "Vertrieb"
     KRAFTWERK = "Kraftwerk"
 
-class ProjectMethodology(enum.Enum):
-    CLASSIC = "klassisch"
-    AGILE = "agil"
-
 class Project(Base):
     __tablename__ = "projects"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     description = Column(String, nullable=True)
-    methodology = Column(Enum(ProjectMethodology), default=ProjectMethodology.CLASSIC)
     business_value = Column(String, nullable=True)
     internal_number = Column(String, nullable=True)
     division = Column(String, nullable=True) # "IT", "Netzgesellschaft", "Vertrieb", "Kraftwerk"
