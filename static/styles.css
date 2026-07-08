@@ -1,18 +1,18 @@
 /* N-VISION Custom Styles - Inspired by Montessori App */
 :root {
-    --primary-color: #1ABC9C;
-    --primary-hover: #16a085;
-    --primary-dark: #16a085;
-    --primary-light: #e8f8f5;
-    --secondary-color: #2ECC71;
+    --primary-color: #27AE60;
+    --primary-hover: #219150;
+    --primary-dark: #1E8449;
+    --primary-light: #E9F7EF;
+    --secondary-color: #16A085;
     --bg-color: #f8fafc;
     --text-color: #1e293b;
     --text-muted: #64748b;
-    --sidebar-bg: #34495E;
-    --sidebar-text: #f7fafc;
-    --sidebar-text-muted: #bdc3c7;
-    --sidebar-hover-bg: #2c3e50;
-    --sidebar-active-bg: #1ABC9C;
+    --sidebar-bg: #27AE60;
+    --sidebar-text: #ffffff;
+    --sidebar-text-muted: #E9F7EF;
+    --sidebar-hover-bg: #219150;
+    --sidebar-active-bg: #1E8449;
     --sidebar-width: 260px;
     --sidebar-collapsed-width: 70px;
     --white: #ffffff;
@@ -21,7 +21,7 @@
     --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
     --danger: #e74c3c;
     --warning: #9B59B6;
-    --success: #2ECC71;
+    --success: #27AE60;
     --info: #3498DB;
     --radius-sm: 4px;
     --radius-md: 8px;
@@ -78,7 +78,7 @@ body {
     font-size: 1.5rem;
     font-weight: 800;
     letter-spacing: -0.025em;
-    color: var(--secondary-color);
+    color: var(--white);
 }
 
 .sidebar-nav {

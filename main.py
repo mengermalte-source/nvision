@@ -841,43 +841,42 @@ def seed_database(db: Session = Depends(get_db), user: models.User = Depends(adm
     db.commit()
     
     # 2. Create Teams
-    teams = [models.Team(name=n) for n in ["Backend", "Frontend", "DevOps", "QA"]]
+    teams = [models.Team(name=n) for n in ["Netzbetrieb", "Energiewirtschaft", "IT-Infrastruktur", "Kundenservice"]]
     db.add_all(teams)
     db.commit()
     for t in teams: db.refresh(t)
     
     # 3. Create Roles
-    roles = [models.Role(name=n) for n in ["Senior Dev", "Junior Dev", "Architect", "PO"]]
+    roles = [models.Role(name=n) for n in ["Projektleiter", "Fachexperte", "Systemarchitekt", "Analyst"]]
     db.add_all(roles)
     db.commit()
     for r in roles: db.refresh(r)
     
     # 4. Create Resources
     names = [
-        "Alice Tech", "Bob Builder", "Charlie Cloud", "Diana Data", "Erik Engineering",
-        "Fiona Frontend", "George Graph", "Hannah Hardware", "Ian Infrastructure", "Julia Java",
-        "Kevin Kernel", "Laura Logic", "Michael Mobile", "Nina Network", "Oscar Ops",
-        "Paula Python", "Quentin QA", "Rachel React", "Steve SQL", "Tina Testing",
-        "Umar UI", "Vera UX", "Walter Web", "Xenia XML", "Yorick YAML", "Zoe Zero",
-        "Adam Agile", "Bella Backup", "Chris Code", "Daisy Docker", "Edward Encryption",
-        "Fred Firewall", "Gina Git", "Harry HTML", "Iris IoT", "Jack JSON",
-        "Kira Kubernetes", "Liam Linux", "Mona Monitoring", "Noah Node", "Olivia OAuth",
-        "Peter PHP", "Quinn Query", "Rose REST", "Sam Scrum", "Tara Token",
-        "Ursula Ubuntu", "Victor Vim", "Wendy WiFi", "Xander XSS", "Yvonne Yubikey", "Zack Z-Wave",
-        "Arthur API", "Beatrice Bash", "Cedric CSS", "Doris DNS", "Evan E-Mail",
-        "Felicia FTP", "Gilbert GPU", "Hilda HTTP", "Isaac IP", "Jenny Jenkins",
-        "Kurt Kafka", "Lilly LDAP", "Max Markdown", "Nelly NFS", "Otto OOP",
-        "Patty Pearl", "Quincy Qubit", "Ron Ruby", "Sally SSH", "Tom TCP",
-        "Ulysses UDP", "Valerie VPN", "Will WSDL", "Xaver XPATH", "Yasmin Yacc", "Zelda Zip",
-        "Albert Algorithm", "Brenda Binary", "Conrad Compiler", "Debbie Debug", "Elliot Editor",
-        "Flora Float", "Gavin Gateway", "Holly Hash", "Ivan Integer", "Joy Joystick",
-        "Karl Keyboard", "Linda Linker", "Mark Macro", "Nancy Null", "Oliver Octal",
-        "Paul Pointer", "Queenie Queue", "Robert Router", "Sarah Stack", "Tim Thread"
+        "Lukas Leuchtkraft", "Marina Megawatt", "Klaus Kilowatt", "Sven Spannung", "Petra Photovoltaik",
+        "Viktor Volt", "Anja Ampere", "Olaf Ohm", "Wanda Watt", "Hannes Hertz",
+        "Berta Biogas", "Windfried Windkraft", "Sonja Solar", "Gerald Generator", "Theresa Thermik",
+        "Ursula Umspannwerk", "Niklas Netz", "Isabel Isoliert", "Konrad Kabel", "Lara Ladestrom",
+        "Marco Messwesen", "Nadine Niederspannung", "Oliver Oberleitung", "Paula Peak", "Quentin Quartierspeicher",
+        "Rainer Regelenergie", "Sabine Smartmeter", "Thomas Transformator", "Ulrich Übertragung", "Vera Verbraucher",
+        "Walter Wasserkraft", "Xenia Xenonlicht", "Yvonne Y-Kabel", "Zeno Zelltechnologie", "Armin Ableser",
+        "Beate Brennstoffzelle", "Christian Cogeneration", "Doris Dampfturbine", "Erik Einspeisung", "Friederike Fernwärme",
+        "Gisela Geothermie", "Holger Hochspannung", "Ines Infrarot", "Jochen Joule", "Katrin Kohlenstoff",
+        "Lothar Lithium", "Monika Mittelspannung", "Norbert Netzfrequenz", "Ortwin Ökostrom", "Pia Pumpspeicher",
+        "Rüdiger Reaktor", "Saskia Sektorenkopplung", "Tanja Tarif", "Uwe Unterbrechungsfrei", "Volker Versorgungsicherheit",
+        "Winfried Wirkleistung", "Xaver X-Achse", "Yannick Youngtimer-Kraftwerk", "Zita Zentralsteuerung", "Albert Abrechnung",
+        "Barbara Batteriestand", "Claus Cloud-Energie", "Dieter Drehstrom", "Elke Energieeffizienz", "Frank Freileitung",
+        "Gabi Gastherme", "Helmut Heizwert", "Iris Intraday", "Jörg Jahresverbrauch", "Karin Kernkraft",
+        "Ludwig Lastgang", "Maren Marktdesign", "Niels Niedertarif", "Olga Off-Grid", "Paul Power-to-Gas",
+        "Regina Regelzone", "Stefan Strommix", "Tristan Trasse", "Ute Umweltschutz", "Valentin Verteilnetz",
+        "Werner Wechselstrom", "Yoke Yellow-Phase", "Zoe Zählerkasten", "Anton Anlagenbau", "Bastian Bereitschaft",
+        "Carsten CO2-Zertifikat", "Daniela Direktvermarktung", "Egon Erdgas", "Falk Fernauslesung", "Gudrun Grundversorger"
     ]
     
     # Ergänze falls nötig auf 100
     while len(names) < 100:
-        names.append(f"Mitarbeiter {len(names) + 1}")
+        names.append(f"Energiemitarbeiter {len(names) + 1}")
 
     all_employees = []
     for i, name in enumerate(names):

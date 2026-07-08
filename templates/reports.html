@@ -231,10 +231,11 @@
             // Status Chart
             const statusCtx = document.getElementById('statusChart').getContext('2d');
             new Chart(statusCtx, {
-                type: 'doughnut',
+                type: 'bar',
                 data: {
                     labels: {{ status_labels|tojson }},
                     datasets: [{
+                        label: 'Anzahl Projekte',
                         data: {{ status_values|tojson }},
                         backgroundColor: ['#059669', '#0284c7', '#d97706', '#dc2626', '#4b5563'],
                     }]
@@ -243,7 +244,15 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'bottom' }
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
                     }
                 }
             });
