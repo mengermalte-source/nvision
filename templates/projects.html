@@ -2,164 +2,115 @@
 {% set title = "Projekte" %}
 
 {% block content %}
-<div class="card" style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-    <strong>Filter Bereich:</strong>
-    <a href="/ui/projects" class="btn {% if not selected_division %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 10px;">Alle</a>
-    <a href="/ui/projects?division=IT" class="btn {% if selected_division == 'IT' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 10px;">IT</a>
-    <a href="/ui/projects?division=Netzgesellschaft" class="btn {% if selected_division == 'Netzgesellschaft' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 10px;">Netzgesellschaft</a>
-    <a href="/ui/projects?division=Vertrieb" class="btn {% if selected_division == 'Vertrieb' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 10px;">Vertrieb</a>
-    <a href="/ui/projects?division=Kraftwerk" class="btn {% if selected_division == 'Kraftwerk' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 10px;">Kraftwerk</a>
-</div>
-
-{% if request.state.user and request.state.user.role.value == 'admin' %}
 <div class="card">
-    <h2>Projekt anlegen</h2>
-    <form action="/ui/projects/add" method="post" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; align-items: start;">
-        <div>
-            <label>Name</label><br>
-            <input type="text" name="name" required style="width: 100%; padding: 0.4rem;">
-        </div>
-        <div>
-            <label>Interne Nummer</label><br>
-            <input type="text" name="internal_number" style="width: 100%; padding: 0.4rem;">
-        </div>
-        <div>
-            <label>Bereich</label><br>
-            <select name="division" style="width: 100%; padding: 0.4rem;">
-                <option value="IT">IT</option>
-                <option value="Netzgesellschaft">Netzgesellschaft</option>
-                <option value="Vertrieb">Vertrieb</option>
-                <option value="Kraftwerk">Kraftwerk</option>
-            </select>
-        </div>
-        <div>
-            <label>Methodik</label><br>
-            <select name="methodology" style="width: 100%; padding: 0.4rem;">
-                <option value="klassisch">Klassisch</option>
-                <option value="agil">Agil</option>
-            </select>
-        </div>
-        <div style="grid-column: span 2;">
-            <label>Beschreibung</label><br>
-            <textarea name="description" style="width: 100%; padding: 0.4rem; height: 38px;"></textarea>
-        </div>
-        <div style="grid-column: span 2;">
-            <label>Geschäftswert / Nutzen</label><br>
-            <input type="text" name="business_value" style="width: 100%; padding: 0.4rem;">
-        </div>
-        <div>
-            <label>Start</label><br>
-            <input type="date" name="start_date" required style="width: 100%; padding: 0.4rem;">
-        </div>
-        <div>
-            <label>Ende</label><br>
-            <input type="date" name="end_date" required style="width: 100%; padding: 0.4rem;">
-        </div>
-        <div>
-            <label>Status</label><br>
-            <select name="status" style="width: 100%; padding: 0.4rem;">
-                <option value="planning">Planung</option>
-                <option value="active" selected>Aktiv</option>
-                <option value="on_hold">On Hold</option>
-                <option value="completed">Abgeschlossen</option>
-            </select>
-        </div>
-        <div>
-            <label>Verantwortlich IT</label><br>
-            <input type="text" name="responsible_it" style="width: 100%; padding: 0.4rem;">
-        </div>
-        <div>
-            <label>Verantwortlich FB</label><br>
-            <input type="text" name="responsible_fb" style="width: 100%; padding: 0.4rem;">
-        </div>
-        <div>
-            <label>CATS-Nummer</label><br>
-            <input type="text" name="cats_number" style="width: 100%; padding: 0.4rem;">
-        </div>
-        <div>
-            <label>∑ PT Intern PAB</label><br>
-            <input type="number" name="pt_intern_pab" step="0.5" value="0.0" style="width: 100%; padding: 0.4rem;">
-        </div>
-        <div>
-            <label>∑ PT Intern Geplant</label><br>
-            <input type="number" name="pt_intern_planned" step="0.5" value="0.0" style="width: 100%; padding: 0.4rem;">
-        </div>
-        <div>
-            <label>∑ PT Extern Geplant</label><br>
-            <input type="number" name="pt_extern_planned" step="0.5" value="0.0" style="width: 100%; padding: 0.4rem;">
-        </div>
-        <div style="display: flex; align-items: center; gap: 0.5rem; height: 100%;">
-            <input type="checkbox" name="pab_approval" id="pab_approval">
-            <label for="pab_approval">Freigabe PAB?</label>
-        </div>
-        <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end;">
-            <button type="submit" class="btn btn-primary">Projekt speichern</button>
-        </div>
-    </form>
-</div>
-{% endif %}
+    <div class="project-table-header">
+        <h2>Projektliste</h2>
+        {% if request.state.user and request.state.user.role.value == 'admin' %}
+        <a href="/ui/projects/add" class="btn btn-primary">Neues Projekt anlegen</a>
+        {% endif %}
+    </div>
 
-<div class="card">
-    <h2>Projektliste</h2>
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+    <div class="tabs">
+        <a href="/ui/projects" class="tab-item {% if not selected_division %}active{% endif %}">Alle</a>
+        <a href="/ui/projects?division=IT" class="tab-item {% if selected_division == 'IT' %}active{% endif %}">IT</a>
+        <a href="/ui/projects?division=Netzgesellschaft" class="tab-item {% if selected_division == 'Netzgesellschaft' %}active{% endif %}">Netzgesellschaft</a>
+        <a href="/ui/projects?division=Vertrieb" class="tab-item {% if selected_division == 'Vertrieb' %}active{% endif %}">Vertrieb</a>
+        <a href="/ui/projects?division=Kraftwerk" class="tab-item {% if selected_division == 'Kraftwerk' %}active{% endif %}">Kraftwerk</a>
+    </div>
+
+    <div class="modern-table-wrapper">
+        <table class="modern-table">
             <thead>
-                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                    <th>ID / Nr.</th>
-                    <th>Name / Bereich</th>
-                    <th>Methodik</th>
+                <tr>
+                    <th>Projekt / Details</th>
+                    <th>Prio</th>
+                    <th>Methodik / Status</th>
                     <th>Verantwortlich</th>
                     <th>Zeitraum</th>
-                    <th>Status</th>
                     <th>Fortschritt</th>
-                    <th>Aktionen</th>
+                    <th style="text-align: right;">Aktionen</th>
                 </tr>
             </thead>
             <tbody>
-                {% for p in projects %}
-                <tr style="border-bottom: 1px solid #dee2e6;">
+                {% for p in projects|sort(attribute='priority') %}
+                <tr>
                     <td>
-                        {{ p.id }}<br>
-                        <small style="color: #6c757d;">{{ p.internal_number if p.internal_number else '-' }}</small>
+                        <div style="display: flex; flex-direction: column;">
+                            <a href="/ui/projects/{{ p.id }}" class="project-name-link">{{ p.name }}</a>
+                            <div style="margin-top: 0.35rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-weight: 600; font-size: 0.8rem; color: var(--text-muted);">#{{ p.id }}</span>
+                                {% if p.internal_number %}
+                                <small style="color: var(--text-muted); background: #eee; padding: 1px 5px; border-radius: 4px;">{{ p.internal_number }}</small>
+                                {% endif %}
+                                {% if p.division == 'IT' %}
+                                    <span class="badge badge-it">{{ p.division }}</span>
+                                {% elif p.division == 'Netzgesellschaft' %}
+                                    <span class="badge badge-netz">{{ p.division }}</span>
+                                {% elif p.division == 'Vertrieb' %}
+                                    <span class="badge badge-vertrieb">{{ p.division }}</span>
+                                {% elif p.division == 'Kraftwerk' %}
+                                    <span class="badge badge-kraftwerk">{{ p.division }}</span>
+                                {% else %}
+                                    <span class="badge badge-default">{{ p.division if p.division else '-' }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
                     </td>
                     <td>
-                        <a href="/ui/projects/{{ p.id }}"><strong>{{ p.name }}</strong></a><br>
-                        {% if p.division == 'IT' %}
-                            <span class="badge badge-it">{{ p.division }}</span>
-                        {% elif p.division == 'Netzgesellschaft' %}
-                            <span class="badge badge-netz">{{ p.division }}</span>
-                        {% elif p.division == 'Vertrieb' %}
-                            <span class="badge badge-vertrieb">{{ p.division }}</span>
-                        {% elif p.division == 'Kraftwerk' %}
-                            <span class="badge badge-kraftwerk">{{ p.division }}</span>
+                        {% if p.priority == 1 %}
+                            <span class="badge" style="background-color: #ef4444; color: white;">P1</span>
+                        {% elif p.priority == 2 %}
+                            <span class="badge" style="background-color: #f59e0b; color: white;">P2</span>
+                        {% elif p.priority == 3 %}
+                            <span class="badge" style="background-color: #3b82f6; color: white;">P3</span>
+                        {% elif p.priority == 4 %}
+                            <span class="badge" style="background-color: #10b981; color: white;">P4</span>
                         {% else %}
-                            <span class="badge badge-default">{{ p.division if p.division else '-' }}</span>
+                            <span class="badge badge-default">P{{ p.priority }}</span>
                         {% endif %}
                     </td>
                     <td>
-                        <span class="badge" style="background: #e9ecef; color: #495057;">{{ p.methodology.value }}</span>
-                    </td>
-                    <td>
-                        <small>IT: {{ p.responsible_it if p.responsible_it else '-' }}</small><br>
-                        <small>FB: {{ p.responsible_fb if p.responsible_fb else '-' }}</small>
-                    </td>
-                    <td>{{ p.start_date }} bis {{ p.end_date }}</td>
-                    <td><span style="font-size: 0.8rem;">{{ p.status.value }}</span></td>
-                    <td style="min-width: 150px;">
-                        <div style="width: 100%; background: #e9ecef; border-radius: 4px; height: 12px; margin-bottom: 4px;">
-                            <div style="width: {{ p.progress }}%; background: #2e7d32; height: 100%; border-radius: 4px;">&nbsp;</div>
+                        <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                            <span class="badge badge-default" style="align-self: flex-start;">{{ p.methodology.value }}</span>
+                            <span class="badge badge-default" style="align-self: flex-start;">{{ p.status.value }}</span>
                         </div>
-                        <small>{{ p.progress }}% gebucht</small>
                     </td>
                     <td>
-                        <div style="display: flex; gap: 0.25rem;">
-                            <a href="/ui/projects/{{ p.id }}" class="btn" style="background: #2e7d32; color: white; font-size: 0.7rem; padding: 4px 8px;">Details</a>
+                        <div class="responsible-info">
+                            <span class="responsible-label">IT:</span> <span>{{ p.responsible_it if p.responsible_it else '-' }}</span>
+                            <span class="responsible-label">FB:</span> <span>{{ p.responsible_fb if p.responsible_fb else '-' }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-size: 0.85rem; line-height: 1.4;">
+                            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                <span style="width: 16px; display: inline-block; color: var(--success);">●</span>
+                                {{ p.start_date }}
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                <span style="width: 16px; display: inline-block; color: var(--danger);">●</span>
+                                {{ p.end_date }}
+                            </div>
+                        </div>
+                    </td>
+                    <td style="min-width: 140px;">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: {{ p.progress }}%"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <small style="font-weight: 600; color: var(--primary-color);">{{ p.progress }}%</small>
+                            <small style="color: var(--text-muted); font-size: 0.7rem;">gebucht</small>
+                        </div>
+                    </td>
+                    <td style="text-align: right;">
+                        <div class="action-buttons" style="justify-content: flex-end;">
+                            <a href="/ui/projects/{{ p.id }}" class="btn btn-small btn-details" title="Details">Details</a>
                             {% if request.state.user and request.state.user.role.value == 'admin' %}
-                            <a href="/ui/projects/{{ p.id }}/edit" class="btn" style="background: #ffc107; color: black; font-size: 0.7rem; padding: 4px 8px;">Bearbeiten</a>
-                            <a href="/ui/staffing/add?project_id={{ p.id }}" class="btn btn-primary" style="font-size: 0.7rem; padding: 4px 8px;">Staffing</a>
+                            <a href="/ui/projects/{{ p.id }}/edit" class="btn btn-small btn-edit" title="Bearbeiten">Edit</a>
+                            <a href="/ui/staffing/add?project_id={{ p.id }}" class="btn btn-small btn-staffing" title="Staffing">Staff</a>
                             {% endif %}
                             {% if request.state.user and request.state.user.role.value == 'employee' %}
-                            <a href="/ui/bookings?project_id={{ p.id }}" class="btn btn-primary" style="font-size: 0.7rem; padding: 4px 8px;">Buchen</a>
+                            <a href="/ui/bookings?project_id={{ p.id }}" class="btn btn-small btn-booking">Buchen</a>
                             {% endif %}
                         </div>
                     </td>

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% set title = "Projekt anlegen" %}
+
+{% block content %}
+<div class="card">
+    <h2>Neues Projekt anlegen</h2>
+    <form action="/ui/projects/add" method="post" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; align-items: start;">
+        <div class="form-group">
+            <label>Name</label>
+            <input type="text" name="name" required placeholder="Projektname">
+        </div>
+        <div class="form-group">
+            <label>Interne Nummer</label>
+            <input type="text" name="internal_number" placeholder="z.B. P.Z.12345">
+        </div>
+        <div class="form-group">
+            <label>Bereich</label>
+            <select name="division">
+                <option value="IT">IT</option>
+                <option value="Netzgesellschaft">Netzgesellschaft</option>
+                <option value="Vertrieb">Vertrieb</option>
+                <option value="Kraftwerk">Kraftwerk</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Priorität</label>
+            <select name="priority">
+                <option value="1">P1 - Hoch</option>
+                <option value="2">P2 - Mittel</option>
+                <option value="3">P3 - Niedrig</option>
+                <option value="4">P4 - Sehr Niedrig</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Methodik</label>
+            <select name="methodology">
+                <option value="klassisch">Klassisch</option>
+                <option value="agil">Agil</option>
+            </select>
+        </div>
+        <div class="form-group" style="grid-column: span 2;">
+            <label>Beschreibung</label>
+            <textarea name="description" style="height: 100px;" placeholder="Projektziele und Umfang..."></textarea>
+        </div>
+        <div class="form-group" style="grid-column: span 2;">
+            <label>Geschäftswert / Nutzen</label>
+            <input type="text" name="business_value" placeholder="Welchen Wert hat das Projekt?">
+        </div>
+        <div class="form-group">
+            <label>Startdatum</label>
+            <input type="date" name="start_date" required>
+        </div>
+        <div class="form-group">
+            <label>Enddatum</label>
+            <input type="date" name="end_date" required>
+        </div>
+        <div class="form-group">
+            <label>Status</label>
+            <select name="status">
+                <option value="planning">Planung</option>
+                <option value="active" selected>Aktiv</option>
+                <option value="on_hold">On Hold</option>
+                <option value="completed">Abgeschlossen</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Verantwortlich IT</label>
+            <input type="text" name="responsible_it" placeholder="Name IT-Verantwortlicher">
+        </div>
+        <div class="form-group">
+            <label>Verantwortlich FB</label>
+            <input type="text" name="responsible_fb" placeholder="Name Fachbereichs-Verantwortlicher">
+        </div>
+        <div class="form-group">
+            <label>CATS-Nummer</label>
+            <input type="text" name="cats_number" placeholder="Finanzstelle/Auftrag">
+        </div>
+        <div class="form-group">
+            <label>∑ PT Intern PAB</label>
+            <input type="number" name="pt_intern_pab" step="0.5" value="0.0">
+        </div>
+        <div class="form-group">
+            <label>∑ PT Intern Geplant</label>
+            <input type="number" name="pt_intern_planned" step="0.5" value="0.0">
+        </div>
+        <div class="form-group">
+            <label>∑ PT Extern Geplant</label>
+            <input type="number" name="pt_extern_planned" step="0.5" value="0.0">
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; height: 100%; padding-top: 1.5rem;">
+            <input type="checkbox" name="pab_approval" id="pab_approval" style="width: 20px; height: 20px; cursor: pointer;">
+            <label for="pab_approval" style="cursor: pointer; font-weight: 600;">Freigabe PAB?</label>
+        </div>
+        <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 1rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+            <a href="/ui/projects" class="btn btn-outline">Abbrechen</a>
+            <button type="submit" class="btn btn-primary">Projekt anlegen</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

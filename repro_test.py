@@ -3,7 +3,7 @@ from datetime import date
 
 BASE_URL = "http://localhost:8000"
 
-def test_prms():
+def test_nvision():
     # 1. Create Team
     team = requests.post(f"{BASE_URL}/teams/", json={"name": "Cloud Platform"}).json()
     print(f"Team created: {team}")
@@ -49,6 +49,6 @@ def test_prms():
 
 if __name__ == "__main__":
     try:
-        test_prms()
+        test_nvision()
     except Exception as e:
         print(f"Error: {e}. Make sure the server is running!")

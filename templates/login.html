@@ -3,123 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - PRMS</title>
+    <title>Login - N-VISION</title>
     <link rel="stylesheet" href="/static/styles.css">
-    <style>
-        .login-wrapper {
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, var(--bg-color) 0%, #e8f0e6 100%);
-        }
-        .login-card {
-            background: white;
-            padding: 3rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            width: 100%;
-            max-width: 450px;
-            border: 2px solid var(--secondary-color);
-        }
-        .login-logo {
-            text-align: center;
-            margin-bottom: 2.5rem;
-        }
-        .login-logo h1 {
-            color: var(--primary-color);
-            margin: 0;
-            font-size: 2.5rem;
-            font-weight: 800;
-            letter-spacing: -1px;
-        }
-        .login-logo p {
-            color: #6c757d;
-            margin-top: 0.5rem;
-            font-weight: 500;
-        }
-        .error-msg {
-            background-color: #fceaea;
-            color: var(--danger);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-            font-size: 0.9rem;
-            text-align: center;
-            border: 1px solid #f5c6cb;
-            font-weight: 600;
-        }
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: #495057;
-        }
-        .form-group input {
-            /* Inherit from styles.css */
-        }
-        .form-group input:focus {
-            /* Inherit from styles.css */
-        }
-        .login-footer {
-            margin-top: 2.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid #eee;
-            font-size: 0.85rem;
-            color: #6c757d;
-            text-align: center;
-        }
-        .demo-credentials {
-            display: flex;
-            justify-content: center;
-            gap: 1.5rem;
-            margin-top: 1rem;
-        }
-        .demo-badge {
-            background: #f8f9fa;
-            padding: 4px 10px;
-            border-radius: 4px;
-            border: 1px solid #dee2e6;
-        }
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="login-wrapper">
-        <div class="login-card">
-            <div class="login-logo">
-                <h1>PRMS</h1>
-                <p>Projekt- & Ressourcenmanagement</p>
+<body class="login-body">
+    <div class="login-card">
+        <div style="text-align: center; margin-bottom: 2.5rem;">
+            <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary-dark); letter-spacing: -0.05em; margin-bottom: 0.5rem;">N-VISION</div>
+            <div style="color: var(--text-muted); font-weight: 500;">Projekt- & Ressourcenmanagement</div>
+        </div>
+
+        {% if request.query_params.get('error') %}
+        <div style="background: #fee2e2; color: #991b1b; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 2rem; font-size: 0.875rem; font-weight: 600; border: 1px solid #fecaca; text-align: center;">
+            {{ request.query_params.get('error') }}
+        </div>
+        {% endif %}
+
+        <form action="/login" method="post">
+            <div class="form-group">
+                <label for="username">Benutzername</label>
+                <input type="text" id="username" name="username" placeholder="Benutzername eingeben" required autofocus>
             </div>
-
-            {% if request.query_params.get('error') %}
-            <div class="error-msg">
-                {{ request.query_params.get('error') }}
+            <div class="form-group">
+                <label for="password">Passwort</label>
+                <input type="password" id="password" name="password" placeholder="Passwort eingeben" required>
             </div>
-            {% endif %}
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 0.875rem; font-size: 1rem;">
+                Anmelden
+            </button>
+        </form>
 
-            <form action="/login" method="post">
-                <div class="form-group">
-                    <label for="username">Benutzername</label>
-                    <input type="text" id="username" name="username" placeholder="Benutzername eingeben" required autofocus>
+        <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--border-color); text-align: center;">
+            <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700; margin-bottom: 1rem;">Demo-Zugangsdaten</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div style="background: var(--bg-color); padding: 0.5rem; border-radius: var(--radius-md); font-size: 0.8rem; border: 1px solid var(--border-color);">
+                    <div style="font-weight: 700; color: var(--primary-dark);">Admin</div>
+                    <div style="color: var(--text-muted);">admin / admin</div>
                 </div>
-                <div class="form-group">
-                    <label for="password">Passwort</label>
-                    <input type="password" id="password" name="password" placeholder="Passwort eingeben" required>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 1rem; font-size: 1.1rem;">
-                    Anmelden
-                </button>
-            </form>
-
-            <div class="login-footer">
-                <div>Demo-Zugangsdaten:</div>
-                <div class="demo-credentials">
-                    <span class="demo-badge"><strong>Admin:</strong> admin / admin</span>
-                    <span class="demo-badge"><strong>User:</strong> alice / alice</span>
+                <div style="background: var(--bg-color); padding: 0.5rem; border-radius: var(--radius-md); font-size: 0.8rem; border: 1px solid var(--border-color);">
+                    <div style="font-weight: 700; color: var(--primary-dark);">User</div>
+                    <div style="color: var(--text-muted);">alice / alice</div>
                 </div>
             </div>
         </div>

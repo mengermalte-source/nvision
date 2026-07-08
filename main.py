@@ -1,4 +1,7 @@
 import uvicorn
+import random
+import csv
+import io
 from fastapi import FastAPI, Depends, HTTPException, Query, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -15,17 +18,17 @@ import models
 import schemas
 
 # Security Settings
-SECRET_KEY = "prms-very-secret-key"
+SECRET_KEY = "n-vision-very-secret-key"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./prms.db"
+SQLALCHEMY_DATABASE_URL = "sqlite:///./n-vision.db"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="PRMS - Project & Employee Management System")
+app = FastAPI(title="N-VISION - Project & Employee Management System")
 templates = Jinja2Templates(directory="templates")
 
 # --- Security Helpers ---
@@ -284,6 +287,14 @@ def ui_add_booking(
     db.commit()
     return RedirectResponse(url="/ui/bookings", status_code=303)
 
+@app.get("/ui/projects/add", response_class=HTMLResponse)
+def ui_add_project_form(request: Request):
+    return templates.TemplateResponse(
+        request=request, name="project_add.html", context={
+            "active_page": "project_add"
+        }
+    )
+
 @app.post("/ui/projects/add")
 def ui_add_project(
     name: str = Form(...),
@@ -295,6 +306,7 @@ def ui_add_project(
     start_date: date = Form(...),
     end_date: date = Form(...),
     status: models.ProjectStatus = Form(...),
+    priority: int = Form(1),
     responsible_it: Optional[str] = Form(None),
     responsible_fb: Optional[str] = Form(None),
     pab_approval: bool = Form(False),
@@ -314,6 +326,7 @@ def ui_add_project(
         start_date=start_date,
         end_date=end_date,
         status=status,
+        priority=priority,
         responsible_it=responsible_it,
         responsible_fb=responsible_fb,
         pab_approval=1 if pab_approval else 0,
@@ -350,6 +363,7 @@ def ui_edit_project(
     start_date: date = Form(...),
     end_date: date = Form(...),
     status: models.ProjectStatus = Form(...),
+    priority: int = Form(1),
     responsible_it: Optional[str] = Form(None),
     responsible_fb: Optional[str] = Form(None),
     pab_approval: bool = Form(False),
@@ -372,6 +386,7 @@ def ui_edit_project(
     project.start_date = start_date
     project.end_date = end_date
     project.status = status
+    project.priority = priority
     project.responsible_it = responsible_it
     project.responsible_fb = responsible_fb
     project.pab_approval = 1 if pab_approval else 0
@@ -604,6 +619,7 @@ def seed_database(db: Session = Depends(get_db)):
     # Um sowohl API als auch UI zu bedienen:
     
     # 1. Clear existing data
+    db.query(models.Booking).delete()
     db.query(models.Staffing).delete()
     db.query(models.ServiceAllocation).delete()
     db.query(models.Project).delete()
@@ -624,16 +640,53 @@ def seed_database(db: Session = Depends(get_db)):
     for r in roles: db.refresh(r)
     
     # 4. Create Resources
-    res1 = models.Employee(name="Alice Tech", type=models.ResourceType.INTERNAL, role_id=roles[0].id, team_id=teams[0].id, weekly_hours=40, employment_start=date(2023, 1, 1))
-    res2 = models.Employee(name="Bob Builder", type=models.ResourceType.INTERNAL, role_id=roles[1].id, team_id=teams[1].id, weekly_hours=40, employment_start=date(2023, 6, 1))
-    res3 = models.Employee(name="Charlie Cloud", type=models.ResourceType.EXTERNAL, role_id=roles[2].id, team_id=teams[2].id, weekly_hours=20, employment_start=date(2024, 1, 1))
-    db.add_all([res1, res2, res3])
+    names = [
+        "Alice Tech", "Bob Builder", "Charlie Cloud", "Diana Data", "Erik Engineering",
+        "Fiona Frontend", "George Graph", "Hannah Hardware", "Ian Infrastructure", "Julia Java",
+        "Kevin Kernel", "Laura Logic", "Michael Mobile", "Nina Network", "Oscar Ops",
+        "Paula Python", "Quentin QA", "Rachel React", "Steve SQL", "Tina Testing",
+        "Umar UI", "Vera UX", "Walter Web", "Xenia XML", "Yorick YAML", "Zoe Zero",
+        "Adam Agile", "Bella Backup", "Chris Code", "Daisy Docker", "Edward Encryption",
+        "Fred Firewall", "Gina Git", "Harry HTML", "Iris IoT", "Jack JSON",
+        "Kira Kubernetes", "Liam Linux", "Mona Monitoring", "Noah Node", "Olivia OAuth",
+        "Peter PHP", "Quinn Query", "Rose REST", "Sam Scrum", "Tara Token",
+        "Ursula Ubuntu", "Victor Vim", "Wendy WiFi", "Xander XSS", "Yvonne Yubikey", "Zack Z-Wave",
+        "Arthur API", "Beatrice Bash", "Cedric CSS", "Doris DNS", "Evan E-Mail",
+        "Felicia FTP", "Gilbert GPU", "Hilda HTTP", "Isaac IP", "Jenny Jenkins",
+        "Kurt Kafka", "Lilly LDAP", "Max Markdown", "Nelly NFS", "Otto OOP",
+        "Patty Pearl", "Quincy Qubit", "Ron Ruby", "Sally SSH", "Tom TCP",
+        "Ulysses UDP", "Valerie VPN", "Will WSDL", "Xaver XPATH", "Yasmin Yacc", "Zelda Zip",
+        "Albert Algorithm", "Brenda Binary", "Conrad Compiler", "Debbie Debug", "Elliot Editor",
+        "Flora Float", "Gavin Gateway", "Holly Hash", "Ivan Integer", "Joy Joystick",
+        "Karl Keyboard", "Linda Linker", "Mark Macro", "Nancy Null", "Oliver Octal",
+        "Paul Pointer", "Queenie Queue", "Robert Router", "Sarah Stack", "Tim Thread"
+    ]
+    
+    # Ergänze falls nötig auf 100
+    while len(names) < 100:
+        names.append(f"Mitarbeiter {len(names) + 1}")
+
+    all_employees = []
+    for i, name in enumerate(names):
+        emp_type = models.ResourceType.INTERNAL if i % 5 != 0 else models.ResourceType.EXTERNAL
+        emp = models.Employee(
+            name=name,
+            type=emp_type,
+            role_id=roles[i % len(roles)].id,
+            team_id=teams[i % len(teams)].id,
+            weekly_hours=40 if emp_type == models.ResourceType.INTERNAL else 20,
+            employment_start=date(2023, 1, 1) + timedelta(days=i*10)
+        )
+        all_employees.append(emp)
+    
+    db.add_all(all_employees)
     db.commit()
-    for res in [res1, res2, res3]: db.refresh(res)
+    for emp in all_employees: db.refresh(emp)
+    
+    res1, res2, res3 = all_employees[0], all_employees[1], all_employees[2]
     
     # 5. Create Projects
-    import csv
-    import io
+    random.seed(42)  # For reproducible mixing
     raw_csv_data = """project_code;name;description;bereich;typ;status;priority;start_date;end_date;responsible_it;responsible_business;pab_approved;cats_order;planned_internal_pt;planned_external_pt;actual_pt;source_hint
 P.Z.23198-01;Indidividuelle Changes/Kleinmaßnahmen (< 10 PT);IT;;Ja;;;;;;;;27030137;;;;Aufträge zu Maßnahmen
 P.Z.23211-04;Projektvorklärungen Fachbereiche;IT;;Ja;;;;;;;;;;;;Aufträge zu Maßnahmen
@@ -755,6 +808,8 @@ P.Z.23215-08;Einführung Tenfold;IT-IN-BT;;;;;;;Manuel Siegl;;;20104508;;;;Auftr
 bisher PE;E-Mail für VAG-Fahrer und Werkstattmitarbeiter;IT-IN-BT;;?;;;;;Felix Doll;;;;;;;Aufträge zu Maßnahmen
 P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Aufträge zu Maßnahmen"""
 
+    # 5. Create Projects from raw data
+    random.seed(42)  # For reproducible mixing
     reader = csv.DictReader(io.StringIO(raw_csv_data), delimiter=';')
     all_imported_projects = []
     
@@ -765,8 +820,8 @@ P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Au
         name = row['name']
         internal_number = row['project_code']
         
-        # Gleichverteilte Zuweisung der Bereiche
-        division = divisions[i % len(divisions)]
+        # Durchmischte Zuweisung der Bereiche
+        division = random.choice(divisions)
         
         # Status mapping
         status_raw = row['pab_approved'].lower()
@@ -779,6 +834,14 @@ P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Au
         else:
             status = models.ProjectStatus.PLANNING
             
+        # Priority mapping (P1-P4)
+        priority_raw = row.get('priority', '')
+        if priority_raw and priority_raw.isdigit():
+            priority = int(priority_raw)
+        else:
+            # Zufällige Priorität 1-4
+            priority = random.randint(1, 4)
+
         p = models.Project(
             name=name,
             description=f"Automatischer Import für Projekt {name}.",
@@ -787,6 +850,7 @@ P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Au
             internal_number=internal_number,
             division=division,
             status=status,
+            priority=priority,
             start_date=date(2026, 1, 1),
             end_date=date(2026, 12, 31),
             responsible_it=row['responsible_it'],
@@ -800,12 +864,18 @@ P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Au
     db.commit()
     for p in all_imported_projects: db.refresh(p)
 
-    # Meilensteine für die ersten Projekte
-    for p in all_imported_projects[:5]:
-        m1 = models.Milestone(project_id=p.id, name="Projekt-Kickoff", date=date(2026, 1, 15), description="Initiales Meeting")
-        m2 = models.Milestone(project_id=p.id, name="Konzept-Phase", date=date(2026, 3, 30), description="Abnahme Konzept")
-        m3 = models.Milestone(project_id=p.id, name="Go-Live", date=date(2026, 11, 1), description="Produktivsetzung")
+    # Meilensteine für alle Projekte
+    for i, p in enumerate(all_imported_projects):
+        # Variierende Daten für Meilensteine
+        m1 = models.Milestone(project_id=p.id, name="Projekt-Kickoff", date=p.start_date + timedelta(days=14), description="Initiales Meeting")
+        m2 = models.Milestone(project_id=p.id, name="Konzept-Phase", date=p.start_date + timedelta(days=90), description="Abnahme Konzept")
+        m3 = models.Milestone(project_id=p.id, name="Go-Live", date=p.end_date - timedelta(days=60), description="Produktivsetzung")
         db.add_all([m1, m2, m3])
+        
+        # Optional: Für jedes 3. Projekt einen zusätzlichen Meilenstein
+        if i % 3 == 0:
+            m4 = models.Milestone(project_id=p.id, name="Zwischenbericht", date=p.start_date + timedelta(days=180), description="Status-Update")
+            db.add(m4)
     db.commit()
     
     # Referenzprojekte für Staffing
@@ -813,15 +883,79 @@ P.Z.23212-94;Jira/Confluence Cloud;IT-PA-MA;;Ja;;;;;Julia Geist;;;20098708;;;;Au
     p2 = all_imported_projects[2]
     
     # 6. Create Staffing
-    s1 = models.Staffing(project_id=p1.id, employee_id=res1.id, start_date=date(2026, 1, 1), end_date=date(2026, 6, 30), capacity_fte=0.8)
-    s2 = models.Staffing(project_id=p1.id, employee_id=res2.id, start_date=date(2026, 1, 1), end_date=date(2026, 12, 31), capacity_fte=1.0)
-    s3 = models.Staffing(project_id=p2.id, employee_id=res1.id, start_date=date(2026, 7, 1), end_date=date(2026, 12, 31), capacity_fte=0.5) # Overload test for res1
-    s4 = models.Staffing(project_id=p2.id, employee_id=res3.id, start_date=date(2026, 7, 1), end_date=date(2026, 12, 31), capacity_fte=0.5)
-    db.add_all([s1, s2, s3, s4])
+    # Wir weisen ALLEN Mitarbeitern Projekte zu, um eine ordentliche Auslastung zu zeigen.
+    # Einige Projekte werden "vollgebucht".
+    staffings = []
     
-    # 7. Service Allocation
-    db.add(models.ServiceAllocation(employee_id=res1.id, capacity_percent=10.0, description="Linie"))
+    # Bestimme einige Projekte, die "voll" werden sollen (z.B. die ersten 10)
+    full_projects = all_imported_projects[:10]
     
+    for i, emp in enumerate(all_employees):
+        # Jedem Mitarbeiter 1-3 Projekte zuweisen
+        num_projects = random.randint(1, 3)
+        
+        # Sicherstellen, dass die "full_projects" bevorzugt belegt werden, wenn i klein ist
+        if i < 40:
+             selected_projects = random.sample(full_projects, min(num_projects, len(full_projects)))
+             # Eventuell noch ein zufälliges dazu
+             if len(selected_projects) < num_projects:
+                 remaining = [p for p in all_imported_projects if p not in selected_projects]
+                 selected_projects.extend(random.sample(remaining, num_projects - len(selected_projects)))
+        else:
+             selected_projects = random.sample(all_imported_projects, num_projects)
+
+        for proj in selected_projects:
+            # Wenn es eines der "full_projects" ist, geben wir mehr Kapazität
+            if proj in full_projects:
+                cap = round(random.uniform(0.3, 0.6), 1)
+            else:
+                cap = round(random.uniform(0.05, 0.3), 1)
+                
+            s = models.Staffing(
+                project_id=proj.id,
+                employee_id=emp.id,
+                start_date=date(2026, 1, 1),
+                end_date=date(2026, 12, 31),
+                capacity_fte=cap
+            )
+            staffings.append(s)
+    db.add_all(staffings)
+    
+    # 7. Service Allocation (Linienaufgaben)
+    # Alle Mitarbeiter haben etwas Grundlast in der Linie (10-20%)
+    for emp in all_employees:
+        db.add(models.ServiceAllocation(
+            employee_id=emp.id, 
+            capacity_percent=float(random.choice([10, 15, 20])), 
+            description="Linienaufgaben / Grundlast"
+        ))
+    
+    # 8. Buchungen (Ist-Stunden) erzeugen
+    # Um Fortschritt in Projekten zu zeigen, brauchen wir Buchungen.
+    # Wir buchen für das erste Halbjahr 2026.
+    bookings = []
+    current_date = date(2026, 1, 2) # Start im Januar
+    end_booking_date = date(2026, 7, 1)
+    
+    # Wir nehmen eine Stichprobe von Mitarbeitern und Projekten für Buchungen, 
+    # um die DB nicht zu sprengen, aber genug für "Progress" zu haben.
+    for s in staffings[:150]: # Erste 150 Staffings bekommen Buchungen
+        # Buche jede Woche 4 Stunden auf dieses Projekt für 20 Wochen
+        for week in range(20):
+            booking_date = s.start_date + timedelta(weeks=week, days=random.randint(0, 4))
+            if booking_date < end_booking_date:
+                # Stunden basierend auf FTE (vereinfacht)
+                hours = s.capacity_fte * 40 * random.uniform(0.8, 1.2)
+                b = models.Booking(
+                    employee_id=s.employee_id,
+                    project_id=s.project_id,
+                    date=booking_date,
+                    hours=round(hours, 1),
+                    description="Projektarbeit gemäß Staffing"
+                )
+                bookings.append(b)
+    
+    db.add_all(bookings)
     db.commit()
 
     # User-Seeding

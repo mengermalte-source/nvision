@@ -4,10 +4,10 @@
 {% block content %}
 <div class="card">
     <h2>Neue Buchung</h2>
-    <form action="/ui/bookings/add" method="post" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
-        <div>
-            <label>Projekt</label><br>
-            <select name="project_id" required style="width: 100%; padding: 0.4rem;">
+    <form action="/ui/bookings/add" method="post" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; align-items: end;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>Projekt</label>
+            <select name="project_id" required>
                 <option value="">-- Projekt wählen --</option>
                 {% for p in assigned_projects %}
                 <option value="{{ p.id }}">
@@ -16,30 +16,30 @@
                 {% endfor %}
             </select>
         </div>
-        <div>
-            <label>Datum</label><br>
-            <input type="date" name="date" value="{{ today }}" required style="width: 100%; padding: 0.4rem;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>Datum</label>
+            <input type="date" name="date" value="{{ today }}" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>Stunden</label>
+            <input type="number" name="hours" step="0.5" min="0.5" max="24" required placeholder="z.B. 4.0">
+        </div>
+        <div class="form-group" style="grid-column: span 2; margin-bottom: 0;">
+            <label>Beschreibung</label>
+            <input type="text" name="description" placeholder="Was hast du gemacht?">
         </div>
         <div>
-            <label>Stunden</label><br>
-            <input type="number" name="hours" step="0.5" min="0.5" max="24" required style="width: 100%; padding: 0.4rem;">
-        </div>
-        <div style="grid-column: span 2;">
-            <label>Beschreibung</label><br>
-            <input type="text" name="description" placeholder="Was hast du gemacht?" style="width: 100%; padding: 0.4rem;">
-        </div>
-        <div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Buchen</button>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Stunden buchen</button>
         </div>
     </form>
 </div>
 
 <div class="card">
     <h2>Meine Buchungen</h2>
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+    <div class="modern-table-wrapper">
+        <table class="modern-table">
             <thead>
-                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                <tr>
                     <th>Datum</th>
                     <th>Projekt</th>
                     <th>Stunden</th>
@@ -48,15 +48,15 @@
             </thead>
             <tbody>
                 {% for b in bookings %}
-                <tr style="border-bottom: 1px solid #dee2e6;">
-                    <td>{{ b.date }}</td>
+                <tr>
+                    <td style="font-weight: 600;">{{ b.date }}</td>
                     <td>{{ b.project.name }}</td>
-                    <td>{{ b.hours }} h</td>
-                    <td>{{ b.description if b.description else '-' }}</td>
+                    <td><span class="badge badge-default">{{ b.hours }} h</span></td>
+                    <td style="color: var(--text-muted);">{{ b.description if b.description else '-' }}</td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 1rem;">Noch keine Buchungen vorhanden.</td>
+                    <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">Noch keine Buchungen vorhanden.</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -3,59 +3,64 @@
 
 {% block content %}
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
         <div>
             <h2 style="margin: 0;">Staffing: {{ project.name }}</h2>
-            <p style="margin: 0.5rem 0 0 0; color: #666;">
-                Projektlaufzeit: <strong>{{ project.start_date }}</strong> bis <strong>{{ project.end_date }}</strong>
-            </p>
+            <div style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">
+                Projektlaufzeit: <span style="font-weight: 700; color: var(--text-color);">{{ project.start_date }}</span> bis <span style="font-weight: 700; color: var(--text-color);">{{ project.end_date }}</span>
+            </div>
         </div>
-        <a href="/ui/projects" class="btn" style="background: #e9ecef; color: #495057;">Abbrechen</a>
+        <a href="/ui/projects" class="btn btn-outline">Abbrechen</a>
     </div>
 
     <form action="/ui/staffing/bulk_add" method="post">
         <input type="hidden" name="project_id" value="{{ project.id }}">
         
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="modern-table-wrapper">
+            <table class="modern-table">
                 <thead>
-                    <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6; text-align: left;">
-                        <th style="padding: 0.75rem; width: 40px;">Sel.</th>
-                        <th style="padding: 0.75rem;">Mitarbeiter</th>
-                        <th style="padding: 0.75rem;">Team / Rolle</th>
-                        <th style="padding: 0.75rem; width: 160px;">Startdatum</th>
-                        <th style="padding: 0.75rem; width: 160px;">Enddatum</th>
-                        <th style="padding: 0.75rem; width: 100px;">Kapazität (FTE)</th>
+                    <tr>
+                        <th style="width: 60px; text-align: center;">Sel.</th>
+                        <th>Mitarbeiter</th>
+                        <th>Team / Rolle</th>
+                        <th style="width: 180px;">Startdatum</th>
+                        <th style="width: 180px;">Enddatum</th>
+                        <th style="width: 120px;">Kapazität (FTE)</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for emp in employees %}
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 0.75rem; text-align: center;">
+                    <tr id="row_{{ emp.id }}">
+                        <td style="text-align: center;">
                             <input type="checkbox" name="selected_employees" value="{{ emp.id }}" id="emp_{{ emp.id }}" 
-                                   onchange="toggleInputs('{{ emp.id }}')">
+                                   onchange="toggleInputs('{{ emp.id }}')" style="width: 18px; height: 18px; cursor: pointer;">
                         </td>
-                        <td style="padding: 0.75rem;">
-                            <label for="emp_{{ emp.id }}" style="cursor: pointer; font-weight: 600;">{{ emp.name }}</label>
-                            <br><small style="color: #888;">{{ emp.type.value }}</small>
+                        <td>
+                            <label for="emp_{{ emp.id }}" style="cursor: pointer; font-weight: 700; color: #0f172a;">{{ emp.name }}</label>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ emp.type.value }}</div>
                         </td>
-                        <td style="padding: 0.75rem;">
-                            <small>{{ emp.team.name if emp.team else '-' }} / {{ emp.role.name if emp.role else '-' }}</small>
+                        <td>
+                            <div style="font-size: 0.85rem; color: #334155;">
+                                {{ emp.team.name if emp.team else '-' }}
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                {{ emp.role.name if emp.role else '-' }}
+                            </div>
                         </td>
-                        <td style="padding: 0.75rem;">
+                        <td>
                             <input type="date" name="start_date_{{ emp.id }}" id="start_{{ emp.id }}" 
                                    value="{{ project.start_date }}" disabled 
-                                   style="width: 100%; padding: 0.4rem; border: 1px solid #ddd; border-radius: 4px;">
+                                   class="form-input-small">
                         </td>
-                        <td style="padding: 0.75rem;">
+                        <td>
                             <input type="date" name="end_date_{{ emp.id }}" id="end_{{ emp.id }}" 
                                    value="{{ project.end_date }}" disabled
-                                   style="width: 100%; padding: 0.4rem; border: 1px solid #ddd; border-radius: 4px;">
+                                   class="form-input-small">
                         </td>
-                        <td style="padding: 0.75rem;">
+                        <td>
                             <input type="number" name="capacity_fte_{{ emp.id }}" id="fte_{{ emp.id }}" 
                                    value="1.0" step="0.1" min="0" max="2.0" disabled
-                                   style="width: 100%; padding: 0.4rem; border: 1px solid #ddd; border-radius: 4px;">
+                                   class="form-input-small">
                         </td>
                     </tr>
                     {% endfor %}
@@ -63,25 +68,59 @@
             </table>
         </div>
 
-        <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
-            <button type="submit" class="btn btn-primary" style="padding: 0.8rem 2rem;">Ausgewählte Mitarbeiter hinzufügen</button>
+        <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+            <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2.5rem;">Ausgewählte Mitarbeiter hinzufügen</button>
         </div>
     </form>
 </div>
 
+<style>
+.form-input-small {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    background-color: #f8fafc;
+    transition: all 0.2s;
+}
+.form-input-small:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background-color: white;
+}
+.form-input-small:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+</style>
+
 <script>
 function toggleInputs(empId) {
     const isChecked = document.getElementById('emp_' + empId).checked;
-    document.getElementById('start_' + empId).disabled = !isChecked;
-    document.getElementById('end_' + empId).disabled = !isChecked;
-    document.getElementById('fte_' + empId).disabled = !isChecked;
+    const startInput = document.getElementById('start_' + empId);
+    const endInput = document.getElementById('end_' + empId);
+    const fteInput = document.getElementById('fte_' + empId);
     
-    // Optisches Feedback für die Zeile
-    const row = document.getElementById('emp_' + empId).closest('tr');
+    startInput.disabled = !isChecked;
+    endInput.disabled = !isChecked;
+    fteInput.disabled = !isChecked;
+    
     if (isChecked) {
-        row.style.background = '#f0f9f4';
+        startInput.style.backgroundColor = 'white';
+        endInput.style.backgroundColor = 'white';
+        fteInput.style.backgroundColor = 'white';
     } else {
-        row.style.background = 'transparent';
+        startInput.style.backgroundColor = '#f8fafc';
+        endInput.style.backgroundColor = '#f8fafc';
+        fteInput.style.backgroundColor = '#f8fafc';
+    }
+    
+    const row = document.getElementById('row_' + empId);
+    if (isChecked) {
+        row.style.backgroundColor = '#f0fdf4';
+    } else {
+        row.style.backgroundColor = 'transparent';
     }
 }
 </script>

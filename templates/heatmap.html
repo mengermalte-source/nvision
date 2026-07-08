@@ -3,43 +3,49 @@
 
 {% block content %}
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h2 style="margin: 0;">Jahresübersicht: {{ year }}</h2>
-        <div>
-            <a href="/?year={{ year - 1 }}" class="btn btn-primary">&laquo; {{ year - 1 }}</a>
-            <a href="/?year={{ year + 1 }}" class="btn btn-primary">{{ year + 1 }} &raquo;</a>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="margin: 0;">Jahresübersicht {{ year }}</h2>
+        <div class="action-buttons">
+            <a href="/?year={{ year - 1 }}" class="btn btn-outline">&laquo; {{ year - 1 }}</a>
+            <a href="/?year={{ year + 1 }}" class="btn btn-outline">{{ year + 1 }} &raquo;</a>
         </div>
     </div>
 
-    <div style="overflow-x: auto;">
-        <table class="heatmap-table">
+<div class="modern-table-wrapper" style="border: none; overflow-x: auto;">
+        <table class="heatmap-table" style="width: 100%; border-collapse: separate; border-spacing: 4px;">
             <thead>
-                <tr>
-                    <th>Mitarbeiter</th>
-                    <th>FTE</th>
-                    <th>Jan</th>
-                    <th>Feb</th>
-                    <th>Mär</th>
-                    <th>Apr</th>
-                    <th>Mai</th>
-                    <th>Jun</th>
-                    <th>Jul</th>
-                    <th>Aug</th>
-                    <th>Sep</th>
-                    <th>Okt</th>
-                    <th>Nov</th>
-                    <th>Dez</th>
+                <tr style="display: table-row;">
+                    <th style="background: transparent; border: none; text-align: left; padding-left: 0; width: 250px; display: table-cell;">Mitarbeiter</th>
+                    <th style="background: transparent; border: none; width: 60px; text-align: center; display: table-cell;">FTE</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Jan</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Feb</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Mär</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Apr</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Mai</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Jun</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Jul</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Aug</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Sep</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Okt</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Nov</th>
+                    <th style="background: transparent; border: none; text-align: center; display: table-cell;">Dez</th>
                 </tr>
             </thead>
             <tbody>
                 {% for entry in heatmap %}
-                <tr>
-                    <td><strong>{{ entry.employee_name }}</strong></td>
-                    <td style="font-size: 0.8rem; color: #666;">{{ "%.1f"|format(entry.total_capacity_fte) }}</td>
+                <tr style="display: table-row;">
+                    <td style="padding: 0.5rem 0; vertical-align: middle; display: table-cell; width: 250px;">
+                        <div style="font-weight: 700;">{{ entry.employee_name }}</div>
+                    </td>
+                    <td style="text-align: center; color: var(--text-muted); font-size: 0.8rem; vertical-align: middle; display: table-cell; width: 60px;">{{ "%.1f"|format(entry.total_capacity_fte) }}</td>
                     {% for m in entry.months %}
                     <td class="heatmap-cell cell-{{ m.status }}" 
-                        onclick="showDetail({{ entry.employee_id }}, {{ entry.year }}, {{ m.month }})"
-                        title="Frei: {{ '%.2f'|format(m.free_capacity_fte) }} FTE">
+                        data-employee="{{ entry.employee_id }}"
+                        data-year="{{ entry.year }}"
+                        data-month="{{ m.month }}"
+                        onclick="showDetail(this.getAttribute('data-employee'), this.getAttribute('data-year'), this.getAttribute('data-month'))"
+                        title="Frei: {{ '%.2f'|format(m.free_capacity_fte) }} FTE"
+                        style="vertical-align: middle; display: table-cell;">
                         {{ "%.1f"|format(m.free_capacity_fte) }}
                     </td>
                     {% endfor %}
@@ -50,11 +56,18 @@
     </div>
 </div>
 
+<style>
+/* Überschreibe potenziell störende globale Styles für die Heatmap */
+.heatmap-table td {
+    border: none !important;
+}
+</style>
+
 <!-- Modal für Details -->
 <div id="detailModal" class="modal">
     <div class="modal-content">
-        <span class="close" onclick="closeModal()">&times;</span>
-        <h3 id="modalTitle">Details</h3>
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+        <h3 id="modalTitle" style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.5rem;">Details</h3>
         <div id="modalBody">
             Lade Daten...
         </div>
