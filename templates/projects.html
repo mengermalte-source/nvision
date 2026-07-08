@@ -52,7 +52,7 @@
                     <th data-label="Status" style="width: 120px;">Status</th>
                     <th data-label="Verantwortlich" class="hide-on-tablet">Verantwortlich</th>
                     <th data-label="Zeitraum" class="hide-on-laptop">Zeitraum</th>
-                    <th data-label="Fortschritt" style="width: 160px;">Fortschritt</th>
+                    <th data-label="Fortschritt" class="hide-on-desktop-small" style="width: 160px;">Fortschritt</th>
                     <th style="text-align: right;" data-label="Aktionen">Aktionen</th>
                 </tr>
             </thead>
@@ -135,7 +135,7 @@
                             </div>
                         </div>
                     </td>
-                    <td style="min-width: 140px;" data-label="Fortschritt">
+                    <td style="min-width: 140px;" data-label="Fortschritt" class="hide-on-desktop-small">
                         <div class="progress-bar-container">
                             {% if p.progress > 100 %}
                             <div class="progress-bar-fill overbooked" style="width: 0%;" data-progress="100"></div>

@@ -834,9 +834,53 @@ body.sidebar-collapsed .main-wrapper {
     border: 1px solid var(--border-color);
 }
 
+@media (max-width: 1400px) {
+    .hide-on-desktop-small {
+        display: none !important;
+    }
+    
+    .main-wrapper {
+        margin-left: 0 !important;
+    }
+    
+    .sidebar {
+        transform: translateX(-100%);
+        box-shadow: 10px 0 15px -3px rgba(0, 0, 0, 0.1);
+        width: 280px;
+        z-index: 1100; /* Höher als top-bar falls nötig */
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+    }
+
+    .menu-toggle {
+        display: flex;
+    }
+
+    /* Auf Mobile/Small Desktop immer Overlay-Modus */
+    .sidebar.collapsed {
+        width: 280px;
+        transform: translateX(-100%);
+    }
+    
+    .sidebar.collapsed.active {
+        transform: translateX(0);
+    }
+
+    body.sidebar-collapsed .main-wrapper {
+        margin-left: 0;
+    }
+}
+
 @media (max-width: 1200px) {
     .hide-on-laptop {
         display: none !important;
+    }
+    
+    /* Fortschritt bei Laptop auch etwas schlanker */
+    .modern-table td[data-label="Fortschritt"] {
+        width: 120px !important;
     }
 }
 
@@ -845,6 +889,12 @@ body.sidebar-collapsed .main-wrapper {
         display: none !important;
     }
     
+    /* Spalte Aktionen bei Tablet verkleinern */
+    .modern-table th[data-label="Aktionen"], 
+    .modern-table td[data-label="Aktionen"] {
+        width: 100px !important;
+    }
+
     .responsible-info {
         flex-direction: column;
         gap: 0.1rem;
@@ -852,63 +902,7 @@ body.sidebar-collapsed .main-wrapper {
 }
 
 /* Responsive */
-@media (max-width: 992px) {
-    .sidebar {
-        width: var(--sidebar-collapsed-width);
-    }
-    
-    .sidebar .nav-label,
-    .sidebar a span:not(.nav-icon) {
-        display: none;
-    }
-    
-    .sidebar .sidebar-header .brand-title {
-        font-size: 0.6rem;
-    }
-    
-    .sidebar .sidebar-nav a {
-        padding: 0.75rem;
-        justify-content: center;
-        margin-right: 0;
-        border-radius: 0;
-    }
-    
-    .sidebar .nav-icon {
-        margin-right: 0;
-    }
-    
-    .main-wrapper {
-        margin-left: var(--sidebar-collapsed-width);
-    }
-}
-
-@media (max-width: 768px) {
-    .sidebar {
-        transform: translateX(-100%);
-        box-shadow: 10px 0 15px -3px rgba(0, 0, 0, 0.1);
-        width: 280px; /* Etwas breiter auf Mobile */
-    }
-
-    .sidebar.active {
-        transform: translateX(0);
-    }
-
-    .main-wrapper {
-        margin-left: 0 !important;
-    }
-
-    .menu-toggle {
-        display: flex;
-    }
-
-    .sidebar.collapsed {
-        width: 280px; /* Ignoriere Collapsed-State auf Mobile */
-    }
-
-    body.sidebar-collapsed .main-wrapper {
-        margin-left: 0;
-    }
-
+@media (max-width: 900px) {
     .top-bar {
         padding: 0.75rem 1rem;
     }

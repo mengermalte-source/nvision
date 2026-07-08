@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (menuToggle && sidebar) {
         menuToggle.addEventListener('click', function(e) {
             e.stopPropagation();
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 1400) {
                 sidebar.classList.toggle('active');
             } else {
                 sidebar.classList.toggle('collapsed');
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         document.addEventListener('click', function(e) {
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 1400) {
                 if (sidebar.classList.contains('active') && 
                     !sidebar.contains(e.target) && 
                     !menuToggle.contains(e.target)) {
