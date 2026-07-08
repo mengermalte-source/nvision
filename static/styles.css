@@ -51,7 +51,7 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: var(--sidebar-width);
+    width: var(--sidebar-collapsed-width); /* Standardmäßig Mini-Modus */
     height: 100vh;
     background: var(--sidebar-bg);
     color: var(--sidebar-text);
@@ -63,7 +63,77 @@ body {
     overflow-x: hidden;
 }
 
-/* .sidebar.collapsed styles removed from here, they are now in media queries */
+/* Sidebar Styling im Mini-Modus (Standard) */
+.sidebar .nav-label {
+    display: none;
+}
+
+.sidebar .sidebar-nav a span, 
+.sidebar .sidebar-nav button span {
+    display: none;
+}
+
+.sidebar .sidebar-header .brand-title {
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.sidebar .sidebar-nav a, 
+.sidebar .nav-button-link {
+    padding: 0.75rem;
+    justify-content: center;
+    margin-right: 0;
+    border-radius: 0;
+    width: 100%;
+}
+
+.sidebar .sidebar-nav a:hover, 
+.sidebar .nav-button-link:hover {
+    padding-left: 0.75rem;
+}
+
+.sidebar .sidebar-nav a.active::before {
+    display: none;
+}
+
+.sidebar .sidebar-nav a.active {
+    border-left: 4px solid var(--secondary-color);
+}
+
+/* Expanded Zustand */
+.sidebar.expanded {
+    width: var(--sidebar-width);
+}
+
+.sidebar.expanded .nav-label {
+    display: block;
+}
+
+.sidebar.expanded .sidebar-nav a span, 
+.sidebar.expanded .sidebar-nav button span {
+    display: inline;
+}
+
+.sidebar.expanded .sidebar-header .brand-title {
+    font-size: 1.5rem;
+}
+
+.sidebar.expanded .sidebar-nav a, 
+.sidebar.expanded .nav-button-link {
+    padding: 0.75rem 1.25rem;
+    justify-content: flex-start;
+    width: calc(100% - 1rem);
+    margin-right: 1rem;
+    border-radius: 0 50px 50px 0;
+}
+
+.sidebar.expanded .sidebar-nav a.active::before {
+    display: block;
+}
+
+.sidebar.expanded .sidebar-nav a.active {
+    border-left: none;
+}
 .sidebar-header {
     padding: 1.5rem 1rem;
     text-align: center;
@@ -156,17 +226,28 @@ body {
     opacity: 1;
 }
 
+.nav-logout {
+    color: #ffdce0 !important; /* Sehr helles Pastell-Rot für exzellenten Kontrast auf Grün */
+    font-weight: 600;
+}
+
+.nav-logout:hover {
+    background: #e74c3c !important; /* Standard-Rot bei Hover für klare Aktion */
+    color: var(--white) !important;
+    padding-left: 1.5rem;
+}
+
 .main-wrapper {
     flex: 1;
-    margin-left: var(--sidebar-width);
+    margin-left: var(--sidebar-collapsed-width); /* Immer mindestens Mini-Sidebar Platz lassen */
     display: flex;
     flex-direction: column;
     transition: margin-left 0.3s ease;
     min-width: 0;
 }
 
-body.sidebar-collapsed .main-wrapper {
-    margin-left: var(--sidebar-collapsed-width);
+body.sidebar-expanded .main-wrapper {
+    margin-left: var(--sidebar-width);
 }
 
 .top-bar {
@@ -804,67 +885,26 @@ body.sidebar-collapsed .main-wrapper {
 }
 
 @media (min-width: 1401px) {
-    .sidebar.collapsed {
-        width: var(--sidebar-collapsed-width);
-    }
-    
-    .sidebar.collapsed .nav-label {
-        display: none;
-    }
-    
-    .sidebar.collapsed .sidebar-nav a span, 
-    .sidebar.collapsed .sidebar-nav button span {
-        display: none;
-    }
-    
-    .sidebar.collapsed .sidebar-header .brand-title {
-        font-size: 0.8rem;
-        white-space: nowrap;
-    }
-    
-    .sidebar.collapsed .sidebar-nav a, 
-    .sidebar.collapsed .nav-button-link {
-        padding: 0.75rem;
-        justify-content: center;
-        margin-right: 0;
-        border-radius: 0;
-        width: 100%;
-    }
-    
-    .sidebar.collapsed .sidebar-nav a:hover, 
-    .sidebar.collapsed .nav-button-link:hover {
-        padding-left: 0.75rem;
-    }
-    
-    .sidebar.collapsed .sidebar-nav a.active::before {
-        display: none;
-    }
-    
-    .sidebar.collapsed .sidebar-nav a.active {
-        border-left: 4px solid var(--secondary-color);
-    }
-}
-
-@media (max-width: 1400px) and (min-width: 1025px) {
-    .sidebar.expanded {
+    /* Standardmäßig über 1400px ist sie expanded, außer wir togglen */
+    .sidebar:not(.expanded):not(.collapsed) {
         width: var(--sidebar-width);
     }
-
-    .sidebar.expanded .nav-label {
+    
+    .sidebar:not(.expanded):not(.collapsed) .nav-label {
         display: block;
     }
-
-    .sidebar.expanded .sidebar-nav a span, 
-    .sidebar.expanded .sidebar-nav button span {
+    
+    .sidebar:not(.expanded):not(.collapsed) .sidebar-nav a span, 
+    .sidebar:not(.expanded):not(.collapsed) .sidebar-nav button span {
         display: inline;
     }
-
-    .sidebar.expanded .sidebar-header .brand-title {
+    
+    .sidebar:not(.expanded):not(.collapsed) .sidebar-header .brand-title {
         font-size: 1.5rem;
     }
-
-    .sidebar.expanded .sidebar-nav a, 
-    .sidebar.expanded .nav-button-link {
+    
+    .sidebar:not(.expanded):not(.collapsed) .sidebar-nav a, 
+    .sidebar:not(.expanded):not(.collapsed) .nav-button-link {
         padding: 0.75rem 1.25rem;
         justify-content: flex-start;
         width: calc(100% - 1rem);
@@ -872,71 +912,21 @@ body.sidebar-collapsed .main-wrapper {
         border-radius: 0 50px 50px 0;
     }
 
-    .sidebar.expanded .sidebar-nav a.active::before {
-        display: block;
+    .sidebar:not(.expanded):not(.collapsed) ~ .main-wrapper {
+        margin-left: var(--sidebar-width);
     }
+}
 
-    .sidebar.expanded ~ .main-wrapper {
-        margin-left: var(--sidebar-width);
-    }
-    
-    body.sidebar-expanded .main-wrapper {
-        margin-left: var(--sidebar-width);
-    }
+/* Desktop-Small (1025px - 1400px) */
+@media (max-width: 1400px) and (min-width: 1025px) {
+    /* Standardmäßig in diesem Bereich ist sie Mini-Modus, außer expanded ist gesetzt */
 }
 
 @media (max-width: 1400px) {
     .hide-on-desktop-small {
         display: none !important;
     }
-    
-    .sidebar {
-        width: var(--sidebar-collapsed-width);
-    }
-
-    .sidebar .nav-label {
-        display: none;
-    }
-
-    .sidebar .sidebar-nav a span, 
-    .sidebar .sidebar-nav button span {
-        display: none;
-    }
-
-    .sidebar .sidebar-header .brand-title {
-        font-size: 0.8rem;
-        white-space: nowrap;
-    }
-
-    .sidebar .sidebar-nav a, 
-    .sidebar .nav-button-link {
-        padding: 0.75rem;
-        justify-content: center;
-        margin-right: 0;
-        border-radius: 0;
-        width: 100%;
-    }
-
-    .sidebar .sidebar-nav a:hover, 
-    .sidebar .nav-button-link:hover {
-        padding-left: 0.75rem;
-    }
-
-    .sidebar .sidebar-nav a.active::before {
-        display: none;
-    }
-
-    .sidebar .sidebar-nav a.active {
-        border-left: 4px solid var(--secondary-color);
-    }
-
-    .main-wrapper {
-        margin-left: var(--sidebar-collapsed-width);
-    }
-
-    body.sidebar-collapsed .main-wrapper {
-        margin-left: var(--sidebar-collapsed-width);
-    }
+    /* Mini-Modus wird bereits durch die Basis-Regeln abgedeckt */
 }
 
 @media (max-width: 1200px) {
@@ -955,56 +945,14 @@ body.sidebar-collapsed .main-wrapper {
         display: none !important;
     }
 
-    .main-wrapper {
-        margin-left: 0 !important;
-    }
-    
+    /* Bei Tablet/Mobile soll sie auch als Mini-Sidebar sichtbar bleiben */
     .sidebar {
-        transform: translateX(-100%);
-        box-shadow: 10px 0 15px -3px rgba(0, 0, 0, 0.1);
-        width: 280px;
-        z-index: 1100;
-        transition: transform 0.3s ease;
+        /* translateX entfernt, damit sie immer sichtbar ist */
+        box-shadow: 10px 0 15px -3px rgba(0, 0, 0, 0.05);
     }
 
-    /* In Mobile-Overlay-Modus wieder volle Breite und Labels zeigen */
-    .sidebar .nav-label {
-        display: block;
-    }
-    .sidebar .sidebar-nav a span, 
-    .sidebar .sidebar-nav button span {
-        display: inline;
-    }
-    .sidebar .sidebar-nav a, 
-    .sidebar .nav-button-link {
-        padding: 0.75rem 1.25rem;
-        justify-content: flex-start;
-        width: calc(100% - 1rem);
-        margin-right: 1rem;
-        border-radius: 0 50px 50px 0;
-    }
-
-    .sidebar.active {
-        transform: translateX(0);
-    }
-
-    .menu-toggle {
-        display: flex;
-    }
-
-    body.sidebar-collapsed .main-wrapper {
-        margin-left: 0;
-    }
-
-    /* Spalte Aktionen bei Tablet verkleinern */
-    .modern-table th[data-label="Aktionen"], 
-    .modern-table td[data-label="Aktionen"] {
-        width: 100px !important;
-    }
-
-    .responsible-info {
-        flex-direction: column;
-        gap: 0.1rem;
+    .main-wrapper {
+        margin-left: var(--sidebar-collapsed-width) !important;
     }
 }
 

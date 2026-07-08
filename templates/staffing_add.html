@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% set title = "Mitarbeiter auf Projekt planen" %}
+{% set title = "Projektmitglieder benennen" %}
 
 {% block content %}
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
         <div>
-            <h2 style="margin: 0;">Staffing: {{ project.name }}</h2>
+            <h2 style="margin: 0;">Projektmitglieder benennen: {{ project.name }}</h2>
             <div style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">
                 Projektlaufzeit: <span style="font-weight: 700; color: var(--text-color);">{{ project.start_date }}</span> bis <span style="font-weight: 700; color: var(--text-color);">{{ project.end_date }}</span>
             </div>

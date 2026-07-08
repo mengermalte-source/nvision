@@ -717,6 +717,7 @@ def ui_staffing_add_form(request: Request, project_id: int, db: Session = Depend
 
     return templates.TemplateResponse(
         request=request, name="staffing_add.html", context={
+            "title": "Projektmitglieder benennen",
             "project": project,
             "employee_data": employee_data,
             "teams": teams,

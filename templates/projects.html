@@ -167,7 +167,7 @@
                         <div class="action-buttons" style="justify-content: flex-end;">
                             {% if request.state.user and request.state.user.role.value == 'admin' %}
                             <a href="/ui/projects/{{ p.id }}/edit" class="btn btn-small btn-edit" title="Bearbeiten">Edit</a>
-                            <a href="/ui/staffing/add?project_id={{ p.id }}" class="btn btn-small btn-staffing" title="Staffing">Staff</a>
+                            <a href="/ui/staffing/add?project_id={{ p.id }}" class="btn btn-small btn-staffing" title="Projektmitglieder benennen">Besetzung</a>
                             {% endif %}
                             {% if request.state.user and request.state.user.role.value == 'employee' %}
                             {% if p.status.value != 'completed' %}

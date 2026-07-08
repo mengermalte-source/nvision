@@ -133,11 +133,11 @@ function showDetail(employeeId, year, month) {
                     </div>
                 </div>
                 
-                <h4 style="font-size: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">Projekt-Zuweisungen</h4>
+                <h4 style="font-size: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">Projekt-Besetzung</h4>
             `;
             
             if (data.staffings.length === 0) {
-                html += "<p style='color: var(--text-muted); font-style: italic;'>Keine Projektzuweisungen in diesem Monat.</p>";
+                html += "<p style='color: var(--text-muted); font-style: italic;'>Keine Projektbesetzung in diesem Monat.</p>";
             } else {
                 html += "<div style='display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;'>";
                 data.staffings.forEach(s => {
