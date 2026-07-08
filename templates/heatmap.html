@@ -114,7 +114,7 @@ function showDetail(employeeId, year, month) {
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                         <span style="color: var(--text-muted);">Service/Linie</span>
-                        <span style="font-weight: 600;">${data.service_capacity_fte.toFixed(2)} FTE</span>
+                        <span style="font-weight: 600;">${(data.service_capacity_fte * 100).toFixed(0)} %</span>
                     </div>
                 </div>
                 

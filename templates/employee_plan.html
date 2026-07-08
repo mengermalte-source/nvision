@@ -18,6 +18,20 @@
                    style="width: 100%; padding: 0.6rem; border: 1px solid #ced4da; border-radius: 4px;">
             <small style="color: #6c757d;">Standard (Wochenstunden * 52): {{ employee.weekly_hours * 52 }} h</small>
         </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="service_capacity_percent" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Service/Linie (%)</label>
+            <input type="number" 
+                   id="service_capacity_percent" 
+                   name="service_capacity_percent" 
+                   value="{{ employee.service_allocations[0].capacity_percent if employee.service_allocations else 0.0 }}" 
+                   step="1" 
+                   min="0" 
+                   max="100"
+                   required 
+                   style="width: 100%; padding: 0.6rem; border: 1px solid #ced4da; border-radius: 4px;">
+            <small style="color: #6c757d;">Beispiel: 10 für 10% Grundlast</small>
+        </div>
         
         <div style="display: flex; gap: 1rem;">
             <button type="submit" class="btn btn-primary">Planung speichern</button>

@@ -47,6 +47,7 @@
                     <th>Team</th>
                     <th>h/Woche</th>
                     <th>h/Jahr</th>
+                    <th>Service (%)</th>
                     <th>Aktionen</th>
                 </tr>
             </thead>
@@ -61,6 +62,13 @@
                     <td>{{ r.team.name if r.team else "-" }}</td>
                     <td>{{ r.weekly_hours }}</td>
                     <td>{{ r.annual_hours_target if r.annual_hours_target else "-" }}</td>
+                    <td>
+                        {% if r.service_allocations %}
+                            {{ r.service_allocations[0].capacity_percent | round(1) }} %
+                        {% else %}
+                            0 %
+                        {% endif %}
+                    </td>
                     <td>
                         <a href="/ui/employees/{{ r.id }}/plan" class="btn btn-small btn-details">Planen</a>
                     </td>

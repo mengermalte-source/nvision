@@ -526,6 +526,7 @@ def ui_employee_plan(request: Request, employee_id: int, db: Session = Depends(g
 def ui_update_employee_plan(
     employee_id: int,
     annual_hours_target: float = Form(...),
+    service_capacity_percent: float = Form(0.0),
     db: Session = Depends(get_db)
 ):
     employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
@@ -533,6 +534,19 @@ def ui_update_employee_plan(
         raise HTTPException(status_code=404, detail="Employee not found")
     
     employee.annual_hours_target = annual_hours_target
+    
+    # Update or create service allocation
+    service_alloc = db.query(models.ServiceAllocation).filter(models.ServiceAllocation.employee_id == employee_id).first()
+    if service_alloc:
+        service_alloc.capacity_percent = service_capacity_percent
+    else:
+        new_alloc = models.ServiceAllocation(
+            employee_id=employee_id,
+            capacity_percent=service_capacity_percent,
+            description="Allgemeine Linienaufgaben"
+        )
+        db.add(new_alloc)
+        
     db.commit()
     return RedirectResponse(url="/ui/employees", status_code=303)
 
