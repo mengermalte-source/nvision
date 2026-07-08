@@ -44,6 +44,9 @@
         <table class="modern-table">
             <thead>
                 <tr>
+                    {% if request.state.user and request.state.user.role.value == 'admin' %}
+                    <th style="width: 40px;"></th>
+                    {% endif %}
                     <th>Projekt / Details</th>
                     <th>Prio</th>
                     <th>Status</th>
@@ -53,9 +56,14 @@
                     <th style="text-align: right;">Aktionen</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="project-table-body">
                 {% for p in projects|sort(attribute='priority') %}
-                <tr>
+                <tr data-id="{{ p.id }}" class="{% if request.state.user and request.state.user.role.value == 'admin' %}draggable-row{% endif %}">
+                    {% if request.state.user and request.state.user.role.value == 'admin' %}
+                    <td class="drag-handle" style="cursor: grab; color: var(--text-muted); text-align: center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+                    </td>
+                    {% endif %}
                     <td>
                         <div style="display: flex; flex-direction: column;">
                             <a href="/ui/projects/{{ p.id }}" class="project-name-link">{{ p.name }}</a>
@@ -168,6 +176,9 @@
 {% endblock %}
 
 {% block scripts %}
+{% if request.state.user and request.state.user.role.value == 'admin' %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+{% endif %}
 <script>
     // Fortschrittsbalken animieren (wie in project_detail.html)
     document.querySelectorAll('.progress-bar-fill').forEach(bar => {
@@ -179,5 +190,39 @@
             }, 100);
         }
     });
+
+    {% if request.state.user and request.state.user.role.value == 'admin' %}
+    // SortableJS Initialisierung
+    const el = document.getElementById('project-table-body');
+    if (el) {
+        Sortable.create(el, {
+            handle: '.drag-handle',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function() {
+                const projectIds = Array.from(el.querySelectorAll('tr')).map(tr => parseInt(tr.getAttribute('data-id')));
+                
+                fetch('/ui/projects/reorder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(projectIds)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // Optional: Erfolgsmeldung anzeigen oder Seite neu laden
+                        console.log('Reihenfolge gespeichert');
+                    }
+                })
+                .catch(error => {
+                    console.error('Fehler beim Speichern der Reihenfolge:', error);
+                    alert('Fehler beim Speichern der Prioritäten. Bitte Seite neu laden.');
+                });
+            }
+        });
+    }
+    {% endif %}
 </script>
 {% endblock %}

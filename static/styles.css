@@ -389,7 +389,7 @@ body.sidebar-collapsed .main-wrapper {
 .badge-danger { background-color: #fee2e2; color: #b91c1c; }
 .badge-info { background-color: #e0f2fe; color: #0369a1; }
 
-.status-planning { background-color: #fee2e2; color: #b91c1c; } /* Rot für Planung */
+.status-planning { background-color: #fce7f3; color: #9d174d; } /* Beerenfarbe für Planung */
 .status-active { background-color: #dcfce7; color: #166534; }   /* Grün für Aktiv */
 .status-on-hold { background-color: #fef9c3; color: #854d0e; }  /* Gelb für Wartend */
 .status-completed { background-color: #f1f5f9; color: #475569; } /* Grau für Abgeschlossen */
@@ -659,8 +659,22 @@ body.sidebar-collapsed .main-wrapper {
 
 .btn-details { background: var(--primary-light); color: var(--primary-dark); }
 .btn-edit { background: #ffedd5; color: #9a3412; }
-.btn-staffing { background: #dcfce7; color: #166534; }
+.btn-staffing { background: #dbeafe; color: #1e40af; }
 .btn-booking { background: var(--primary-light); color: var(--primary-dark); }
+
+/* Drag and Drop */
+.draggable-row {
+    transition: background-color 0.2s;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+    background-color: var(--primary-light) !important;
+}
+
+.drag-handle:hover {
+    color: var(--primary-color) !important;
+}
 
 /* Tabs */
 .tabs {

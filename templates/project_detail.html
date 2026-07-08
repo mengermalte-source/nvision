@@ -209,7 +209,9 @@ gantt
                     <tbody>
                         {% for s in project.staffings | sort(attribute='start_date') %}
                         <tr>
-                            <td style="font-weight: 600;">{{ s.employee.name }}</td>
+                            <td style="font-weight: 600;">
+                                <a href="/ui/employees/{{ s.employee.id }}/plan" style="color: inherit; text-decoration: none;">{{ s.employee.name }}</a>
+                            </td>
                             <td style="font-size: 0.85rem; color: var(--text-muted);">{{ s.start_date }} - {{ s.end_date }}</td>
                             <td><span class="badge badge-default">{{ s.capacity_fte }} FTE</span></td>
                         </tr>
@@ -229,7 +231,6 @@ gantt
         <div class="card" style="margin-bottom: 0;">
             <div class="section-header">
                 <h2>Letzte Buchungen</h2>
-                <a href="/ui/bookings?project_id={{ project.id }}" class="btn btn-primary btn-small">+ Buchen</a>
             </div>
             <div class="modern-table-wrapper">
                 <table class="modern-table">
@@ -245,7 +246,9 @@ gantt
                         {% if loop.index <= 10 %}
                         <tr>
                             <td style="font-size: 0.85rem;">{{ b.date }}</td>
-                            <td style="font-weight: 600;">{{ b.employee.name }}</td>
+                            <td style="font-weight: 600;">
+                                <a href="/ui/employees/{{ b.employee.id }}/plan" style="color: inherit; text-decoration: none;">{{ b.employee.name }}</a>
+                            </td>
                             <td><strong>{{ b.hours }}</strong></td>
                         </tr>
                         {% endif %}

@@ -19,6 +19,10 @@
             <div class="stat-value">{{ critical_projects|length }}</div>
             <div class="stat-label">Kritische Projekte <span class="info-icon">ⓘ</span></div>
         </div>
+        <div class="stat-card" onclick="showReportDefinition('Schläferprojekte')">
+            <div class="stat-value">{{ sleeper_projects|length }}</div>
+            <div class="stat-label">Schläferprojekte <span class="info-icon">ⓘ</span></div>
+        </div>
     </div>
 
     <div class="charts-grid">
@@ -48,6 +52,23 @@
                 {% endfor %}
                 {% if not critical_projects %}
                 <div class="stat-label" style="text-align: center; padding: 2rem;">Keine kritischen Projekte aktuell.</div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="chart-container card" onclick="showReportDefinition('Schläferprojekte')">
+            <h3>Schläferprojekte <span class="info-icon">ⓘ</span></h3>
+            <div class="top-list">
+                {% for p in sleeper_projects %}
+                <div class="top-list-item">
+                    <div style="display: flex; flex-direction: column;">
+                        <a href="/ui/projects/{{ p.id }}" class="item-name" style="text-decoration: none; color: inherit;">{{ p.name }}</a>
+                        <small style="color: var(--text-muted);">Startet am: {{ p.start_date }}</small>
+                    </div>
+                    <span class="item-value" style="color: var(--warning);">0h</span>
+                </div>
+                {% endfor %}
+                {% if not sleeper_projects %}
+                <div class="stat-label" style="text-align: center; padding: 2rem;">Keine Schläferprojekte aktuell.</div>
                 {% endif %}
             </div>
         </div>

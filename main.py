@@ -2,7 +2,7 @@ import uvicorn
 import random
 import csv
 import io
-from fastapi import FastAPI, Depends, HTTPException, Query, Form, Request, status
+from fastapi import FastAPI, Depends, HTTPException, Query, Form, Request, status, Body
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -471,6 +471,16 @@ def ui_complete_project(project_id: int, db: Session = Depends(get_db), user: mo
     project.status = models.ProjectStatus.COMPLETED
     db.commit()
     return RedirectResponse(url="/ui/projects", status_code=303)
+
+@app.post("/ui/projects/reorder")
+async def ui_reorder_projects(project_ids: list[int] = Body(...), db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
+    """Aktualisiert die Priorität (Reihenfolge) mehrerer Projekte gleichzeitig."""
+    for index, p_id in enumerate(project_ids):
+        project = db.query(models.Project).filter(models.Project.id == p_id).first()
+        if project:
+            project.priority = index + 1
+    db.commit()
+    return {"status": "ok"}
 
 @app.get("/ui/projects/{project_id}", response_class=HTMLResponse)
 def ui_project_detail(request: Request, project_id: int, db: Session = Depends(get_db)):
@@ -1220,6 +1230,7 @@ def ui_reports(request: Request, db: Session = Depends(get_db)):
     # 2. Projekte mit kritischem Zeitverzug oder Budget-Überschreitung (Fortschritt > Zeit)
     all_projects = db.query(models.Project).filter(models.Project.status != models.ProjectStatus.COMPLETED).all()
     critical_projects = []
+    sleeper_projects = []
     
     today = date.today()
     for p in all_projects:
@@ -1234,6 +1245,14 @@ def ui_reports(request: Request, db: Session = Depends(get_db)):
         # Berechne IST-Stunden
         total_booked = db.query(func.sum(models.Booking.hours)).filter(models.Booking.project_id == p.id).scalar() or 0.0
         
+        # Schläferprojekte: Gestartet aber keine Buchungen
+        if p.start_date <= today and total_booked == 0:
+            sleeper_projects.append({
+                "id": p.id,
+                "name": p.name,
+                "start_date": p.start_date
+            })
+
         # Berechne geplante Stunden (8h pro PT)
         planned_hours = (p.pt_intern_planned + p.pt_extern_planned) * 8.0
         
@@ -1250,6 +1269,9 @@ def ui_reports(request: Request, db: Session = Depends(get_db)):
             
     # Sortiere nach höchster Abweichung
     critical_projects = sorted(critical_projects, key=lambda x: x["diff"], reverse=True)[:5]
+    
+    # Sortiere Schläfer nach Startdatum (älteste zuerst)
+    sleeper_projects = sorted(sleeper_projects, key=lambda x: x["start_date"])[:5]
     
     # 3. Auslastung über die nächsten 6 Monate (vereinfacht)
     today = date.today()
@@ -1289,7 +1311,8 @@ def ui_reports(request: Request, db: Session = Depends(get_db)):
         "Projekt-Status Verteilung": "Grafische Darstellung der Projekte aufgeteilt nach ihrem aktuellen Lebenszyklus-Status.",
         "Ressourcen-Auslastung": "Trend der geplanten Auslastung (Staffing) über die nächsten 6 Monate im Verhältnis zur Gesamtkapazität.",
         "Projekte nach Bereich": "Anzahl der Projekte gruppiert nach Fachbereichen (IT, Netzgesellschaft, etc.).",
-        "Top 5 Kritische Projekte": "Liste der Projekte mit der höchsten negativen Abweichung zwischen Arbeitsfortschritt und Zeitverlauf."
+        "Top 5 Kritische Projekte": "Liste der Projekte mit der höchsten negativen Abweichung zwischen Arbeitsfortschritt und Zeitverlauf.",
+        "Schläferprojekte": "Projekte, die laut Startdatum bereits laufen sollten, aber noch keine Zeitbuchungen aufweisen."
     }
 
     context = {
@@ -1298,6 +1321,7 @@ def ui_reports(request: Request, db: Session = Depends(get_db)):
         "title": "Management Reports",
         "status_data": status_data,
         "critical_projects": critical_projects,
+        "sleeper_projects": sleeper_projects,
         "months": months,
         "utilization": utilization,
         "division_data": division_data,
