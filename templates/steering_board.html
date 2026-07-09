@@ -1,155 +1,252 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="tabs-container" style="display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1.5rem;">
-    <div class="tabs" style="background: #f8fafc; padding: 0.4rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; margin: 0;">
-        <div style="display: flex; gap: 0.4rem; overflow-x: auto;">
-            <a href="/ui/projektlenkung" class="tab-item {% if not selected_division %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm); white-space: nowrap;">Alle Sparten</a>
-            <a href="/ui/projektlenkung?division=IT" class="tab-item {% if selected_division == 'IT' %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm);">IT</a>
-            <a href="/ui/projektlenkung?division=Netzgesellschaft" class="tab-item {% if selected_division == 'Netzgesellschaft' %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm);">Netz</a>
-            <a href="/ui/projektlenkung?division=Vertrieb" class="tab-item {% if selected_division == 'Vertrieb' %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm);">Vertrieb</a>
-            <a href="/ui/projektlenkung?division=Kraftwerk" class="tab-item {% if selected_division == 'Kraftwerk' %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm);">Kraftwerk</a>
+{% set current_tab = request.query_params.get('tab', 'summary') %}
+<div class="tabs-container" style="display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1rem;">
+    <div class="tabs" style="background: white; padding: 0.5rem; border-radius: var(--radius-md); box-shadow: var(--card-shadow); display: flex; gap: 0.25rem; flex-wrap: wrap; border: none; margin: 0;">
+        <div style="display: flex; gap: 0.25rem; flex: 1; min-width: 300px; flex-wrap: wrap;">
+            <a href="/ui/projektlenkung?tab={{ current_tab }}" class="tab-item {% if not selected_division %}active{% endif %}" style="flex: 1; min-width: 100px; text-align: center; border-radius: var(--radius-sm);">Alle Sparten</a>
+            <a href="/ui/projektlenkung?division=IT&tab={{ current_tab }}" class="tab-item {% if selected_division == 'IT' %}active{% endif %}" style="flex: 1; min-width: 60px; text-align: center; border-radius: var(--radius-sm);">IT</a>
+            <a href="/ui/projektlenkung?division=Netzgesellschaft&tab={{ current_tab }}" class="tab-item {% if selected_division == 'Netzgesellschaft' %}active{% endif %}" style="flex: 1; min-width: 80px; text-align: center; border-radius: var(--radius-sm);">Netz</a>
+            <a href="/ui/projektlenkung?division=Vertrieb&tab={{ current_tab }}" class="tab-item {% if selected_division == 'Vertrieb' %}active{% endif %}" style="flex: 1; min-width: 80px; text-align: center; border-radius: var(--radius-sm);">Vertrieb</a>
+            <a href="/ui/projektlenkung?division=Kraftwerk&tab={{ current_tab }}" class="tab-item {% if selected_division == 'Kraftwerk' %}active{% endif %}" style="flex: 1; min-width: 100px; text-align: center; border-radius: var(--radius-sm);">Kraftwerk</a>
         </div>
-        <div class="filter-legend hide-on-tablet" style="padding-right: 1rem; display: flex; gap: 0.75rem; align-items: center; font-size: 0.85rem; color: var(--text-muted);">
+        <div class="filter-legend hide-on-tablet" style="padding: 0 1rem; display: flex; gap: 0.75rem; align-items: center; font-size: 0.85rem; color: var(--text-muted); background: #f8fafc; border-radius: var(--radius-sm); margin-left: 0.5rem;">
              <span style="font-weight: 600;">Legende:</span>
-             <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot green" style="width: 12px; height: 12px;"></span> OK</span>
-             <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot yellow" style="width: 12px; height: 12px;"></span> Achtung</span>
-             <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot red" style="width: 12px; height: 12px;"></span> Kritisch</span>
+             <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot green" style="width: 10px; height: 10px;"></span> OK</span>
+             <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot yellow" style="width: 10px; height: 10px;"></span> Achtung</span>
+             <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot red" style="width: 10px; height: 10px;"></span> Kritisch</span>
         </div>
     </div>
 </div>
 
-<div class="card" style="padding: 0;">
-    <div class="modern-table-wrapper" style="border: none;">
-        <table class="modern-table">
-            <thead>
-                <tr>
-                    <th style="min-width: 250px;">Projekt</th>
-                    <th style="width: 100px; text-align: center;">Ampeln</th>
-                    <th style="width: 250px;">Lenkungsausschuss</th>
-                    <th style="text-align: left;">Statusbericht</th>
-                    <th style="width: 80px; text-align: right;">Aktionen</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in projects %}
-                <tr>
-                    <td>
-                        <div style="display: flex; flex-direction: column;">
-                            <a href="/ui/projects/{{ p.id }}" class="project-name-link">{{ p.name }}</a>
-                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <span class="badge {% if p.division == 'IT' %}badge-it{% elif p.division == 'Netzgesellschaft' %}badge-netz{% elif p.division == 'Vertrieb' %}badge-vertrieb{% elif p.division == 'Kraftwerk' %}badge-kraftwerk{% else %}badge-default{% endif %}" style="font-size: 0.65rem; padding: 1px 6px;">{{ p.division }}</span>
-                                <span>Ende: {{ p.end_date }}</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td style="text-align: center;">
-                        <div class="steering-container" data-tooltip="Status-Update am: {{ p.steering_last_update if p.steering_last_update else 'nie' }}" data-tooltip-pos="left">
-                            <div class="steering-group" data-tooltip="Zeitplan: {{ 'OK' if p.steering_time.value == 'GREEN' else 'Verzögerung' if p.steering_time.value == 'YELLOW' else 'Kritisch' if p.steering_time.value == 'RED' else 'Keine Info' }}">
-                                <span class="steering-dot {{ p.steering_time.value.lower() }}"></span>
-                                <span class="steering-label">Z</span>
-                            </div>
-                            <div class="steering-group" data-tooltip="Budget: {{ 'OK' if p.steering_budget.value == 'GREEN' else 'Abweichung' if p.steering_budget.value == 'YELLOW' else 'Kritisch' if p.steering_budget.value == 'RED' else 'Keine Info' }}">
-                                <span class="steering-dot {{ p.steering_budget.value.lower() }}"></span>
-                                <span class="steering-label">B</span>
-                            </div>
-                            <div class="steering-group" data-tooltip="Qualität: {{ 'OK' if p.steering_quality.value == 'GREEN' else 'Mängel' if p.steering_quality.value == 'YELLOW' else 'Kritisch' if p.steering_quality.value == 'RED' else 'Keine Info' }}">
-                                <span class="steering-dot {{ p.steering_quality.value.lower() }}"></span>
-                                <span class="steering-label">Q</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center;">
-                            {% for m in p.steering_members %}
-                            <div class="badge" style="background: var(--primary-light); color: var(--primary-dark); border: 1px solid rgba(39, 174, 96, 0.2); display: flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.5rem; font-size: 0.75rem;">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                {{ m.name }}
-                                <form action="/ui/projektlenkung/unassign" method="post" style="display: inline;" onsubmit="return confirm('Mitglied entfernen?')">
-                                    <input type="hidden" name="project_id" value="{{ p.id }}">
-                                    <input type="hidden" name="employee_id" value="{{ m.id }}">
-                                    <button type="submit" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 0; font-weight: bold; font-size: 1rem; line-height: 1; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">&times;</button>
-                                </form>
-                            </div>
-                            {% endfor %}
-                            <button onclick="document.getElementById('assignModal{{ p.id }}').style.display='flex'" class="btn" style="padding: 0.2rem 0.5rem; font-size: 0.8rem; min-height: auto; border: 1px dashed var(--primary-color); color: var(--primary-color); background: transparent;" title="Mitglied hinzufügen">+</button>
-                        </div>
-                    </td>
-                    <td style="text-align: left;">
-                        <div style="display: flex; flex-direction: column; gap: 0.4rem; padding: 0.25rem 0;">
-                            <div style="font-size: 0.85rem; line-height: 1.4; color: var(--text-color); max-height: 2.8rem; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: pre-wrap; text-align: left;" title="{{ p.steering_details.strip() if p.steering_details else '' }}">{% if p.steering_details %}{{ p.steering_details.strip() }}{% else %}-{% endif %}</div>
-                            {% if p.steering_last_update %}
-                            <div style="font-size: 0.7rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.35rem; line-height: 1; justify-content: flex-start;">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                <span>Update: {{ p.steering_last_update }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </td>
-                    <td style="text-align: right;">
-                        <a href="/ui/projects/{{ p.id }}" class="btn btn-small btn-details" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.75rem;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            Details
-                        </a>
-                    </td>
-                </tr>
+<div class="tabs-container" style="margin-bottom: 1.5rem;">
+    <div class="tabs" style="background: white; padding: 0.5rem; border-radius: var(--radius-md); box-shadow: var(--card-shadow); display: flex; gap: 0.25rem; flex-wrap: wrap; border: none; margin: 0;">
+        <button class="tab-item {% if current_tab == 'summary' %}active{% endif %}" onclick="showContentTab('summary')" id="tab-summary" style="flex: 1; min-width: 160px; text-align: center; font-size: 0.85rem;">Status-Zusammenfassung</button>
+        <button class="tab-item {% if current_tab == 'list' %}active{% endif %}" onclick="showContentTab('list')" id="tab-list" style="flex: 1; min-width: 160px; text-align: center; font-size: 0.85rem;">Detaillierte Übersicht</button>
+    </div>
+</div>
 
-                <!-- Assign Modal for this project -->
-                <div class="modal-overlay" id="assignModal{{ p.id }}" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-                    <div class="card" style="width: 400px; margin-bottom: 0; text-align: left;">
-                        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                            <h3 style="margin: 0;">Mitglied hinzufügen</h3>
-                            <button onclick="document.getElementById('assignModal{{ p.id }}').style.display='none'" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
-                        </div>
-                        <form action="/ui/projektlenkung/assign" method="post">
-                            <input type="hidden" name="project_id" value="{{ p.id }}">
-                            <div class="form-group" style="margin-bottom: 1rem;">
-                                <label for="employeeSelect{{ p.id }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Mitarbeiter auswählen</label>
-                                <select id="employeeSelect{{ p.id }}" name="employee_id" class="form-control" style="width: 100%;">
-                                    {% for e in employees %}
-                                        {% if e not in p.steering_members %}
-                                        <option value="{{ e.id }}">{{ e.name }}</option>
-                                        {% endif %}
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
-                                <button type="button" onclick="document.getElementById('assignModal{{ p.id }}').style.display='none'" class="btn">Abbrechen</button>
-                                <button type="submit" class="btn btn-primary">Hinzufügen</button>
-                            </div>
-                        </form>
+<div id="tab-content-list" class="tab-content" style="display: {% if current_tab == 'list' %}block{% else %}none{% endif %};">
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 1.5rem;">
+        {% for p in projects %}
+        <div class="card steering-card" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; position: relative; border-top: 4px solid {% if p.steering_status.value == 'GREEN' %}#22c55e{% elif p.steering_status.value == 'YELLOW' %}#eab308{% elif p.steering_status.value == 'RED' %}#ef4444{% else %}#cbd5e1{% endif %};">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;">
+                <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 1; min-width: 0;">
+                    <a href="/ui/projects/{{ p.id }}" class="project-name-link" style="font-size: 1.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;" title="{{ p.name }}">{{ p.name }}</a>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <span class="badge {% if p.division == 'IT' %}badge-it{% elif p.division == 'Netzgesellschaft' %}badge-netz{% elif p.division == 'Vertrieb' %}badge-vertrieb{% elif p.division == 'Kraftwerk' %}badge-kraftwerk{% else %}badge-default{% endif %}" style="font-size: 0.7rem;">{{ p.division }}</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;">Endet am: {{ p.end_date }}</span>
                     </div>
                 </div>
-                {% else %}
-                <tr>
-                    <td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-muted);">
-                        Keine Projekte gefunden
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                <div class="steering-container">
+                    <div class="steering-group" data-tooltip="Zeitplan: {{ 'OK' if p.steering_time.value == 'GREEN' else 'Verzögerung' if p.steering_time.value == 'YELLOW' else 'Kritisch' if p.steering_time.value == 'RED' else 'Keine Info' }}">
+                        <span class="steering-dot {{ p.steering_time.value.lower() }}"></span>
+                        <span class="steering-label">Z</span>
+                    </div>
+                    <div class="steering-group" data-tooltip="Budget: {{ 'OK' if p.steering_budget.value == 'GREEN' else 'Abweichung' if p.steering_budget.value == 'YELLOW' else 'Kritisch' if p.steering_budget.value == 'RED' else 'Keine Info' }}">
+                        <span class="steering-dot {{ p.steering_budget.value.lower() }}"></span>
+                        <span class="steering-label">B</span>
+                    </div>
+                    <div class="steering-group" data-tooltip="Qualität: {{ 'OK' if p.steering_quality.value == 'GREEN' else 'Mängel' if p.steering_quality.value == 'YELLOW' else 'Kritisch' if p.steering_quality.value == 'RED' else 'Keine Info' }}">
+                        <span class="steering-dot {{ p.steering_quality.value.lower() }}"></span>
+                        <span class="steering-label">Q</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: #f8fafc; padding: 1rem; border-radius: var(--radius-md); font-size: 0.9rem; flex: 1; border: 1px solid var(--border-color);">
+                <div style="font-weight: 600; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+                    <span>Aktueller Statusbericht</span>
+                    {% if p.steering_last_update %}
+                    <span style="font-weight: 400; text-transform: none;">Update: {{ p.steering_last_update }}</span>
+                    {% endif %}
+                </div>
+                <div style="white-space: pre-wrap; line-height: 1.5; color: var(--text-color);">{% if p.steering_details %}{{ p.steering_details.strip() }}{% else %}<span style="color: var(--text-muted); font-style: italic;">Kein Bericht vorhanden.</span>{% endif %}</div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
+                <div style="font-weight: 600; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted);">Lenkungsausschuss</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center;">
+                    {% for m in p.steering_members %}
+                    <div class="badge" style="background: var(--primary-light); color: var(--primary-dark); border: 1px solid rgba(39, 174, 96, 0.2); display: flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.6rem; font-size: 0.75rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        {{ m.name }}
+                        <form action="/ui/projektlenkung/unassign" method="post" style="display: inline;" onsubmit="return confirm('Mitglied entfernen?')">
+                            <input type="hidden" name="project_id" value="{{ p.id }}">
+                            <input type="hidden" name="employee_id" value="{{ m.id }}">
+                            <button type="submit" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 0; font-weight: bold; font-size: 1.1rem; line-height: 1; opacity: 0.7;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">&times;</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                    <button onclick="document.getElementById('assignModal{{ p.id }}').style.display='flex'" class="btn" style="padding: 0.25rem 0.6rem; font-size: 0.8rem; min-height: auto; border: 1px dashed var(--primary-color); color: var(--primary-color); background: transparent;" title="Mitglied hinzufügen">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Hinzufügen
+                    </button>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                <a href="/ui/projects/{{ p.id }}" class="btn btn-small btn-details" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Projektdetails öffnen
+                </a>
+            </div>
+        </div>
+
+        <!-- Assign Modal for this project -->
+        <div class="modal-overlay" id="assignModal{{ p.id }}" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000;">
+            <div class="card" style="width: 400px; margin-bottom: 0; text-align: left; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+                <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+                    <h3 style="margin: 0; font-size: 1.1rem;">Mitglied hinzufügen</h3>
+                    <button onclick="document.getElementById('assignModal{{ p.id }}').style.display='none'" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+                </div>
+                <form action="/ui/projektlenkung/assign" method="post">
+                    <input type="hidden" name="project_id" value="{{ p.id }}">
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="employeeSelect{{ p.id }}" style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Mitarbeiter auswählen</label>
+                        <select id="employeeSelect{{ p.id }}" name="employee_id" class="form-control" style="width: 100%; padding: 0.6rem;">
+                            {% for e in employees %}
+                                {% if e not in p.steering_members %}
+                                <option value="{{ e.id }}">{{ e.name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                        <button type="button" onclick="document.getElementById('assignModal{{ p.id }}').style.display='none'" class="btn btn-outline" style="padding: 0.5rem 1rem;">Abbrechen</button>
+                        <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;">Hinzufügen</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not projects %}
+    <div class="card" style="padding: 4rem; text-align: center; color: var(--text-muted);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem; opacity: 0.5;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p style="font-size: 1.1rem;">Keine Projekte in dieser Auswahl gefunden.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div id="tab-content-summary" class="tab-content" style="display: {% if current_tab == 'summary' %}block{% else %}none{% endif %};">
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+        {% set counts = {'green': 0, 'yellow': 0, 'red': 0, 'none': 0} %}
+        {% for p in projects %}
+            {% if p.steering_status.value == 'GREEN' %}{% set _ = counts.update({'green': counts.green + 1}) %}
+            {% elif p.steering_status.value == 'YELLOW' %}{% set _ = counts.update({'yellow': counts.yellow + 1}) %}
+            {% elif p.steering_status.value == 'RED' %}{% set _ = counts.update({'red': counts.red + 1}) %}
+            {% else %}{% set _ = counts.update({'none': counts.none + 1}) %}
+            {% endif %}
+        {% endfor %}
+
+        <!-- Stat-Cards -->
+        <div class="card" style="border-left: 4px solid #22c55e;">
+            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Status OK</div>
+            <div style="font-size: 2rem; font-weight: 800; color: #166534; margin-top: 0.5rem;">{{ counts.green }} <span style="font-size: 1rem; font-weight: 400; color: var(--text-muted);">Projekte</span></div>
+        </div>
+        <div class="card" style="border-left: 4px solid #eab308;">
+            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Achtung / Risiken</div>
+            <div style="font-size: 2rem; font-weight: 800; color: #a16207; margin-top: 0.5rem;">{{ counts.yellow }} <span style="font-size: 1rem; font-weight: 400; color: var(--text-muted);">Projekte</span></div>
+        </div>
+        <div class="card" style="border-left: 4px solid #ef4444;">
+            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Kritische Abweichungen</div>
+            <div style="font-size: 2rem; font-weight: 800; color: #991b1b; margin-top: 0.5rem;">{{ counts.red }} <span style="font-size: 1rem; font-weight: 400; color: var(--text-muted);">Projekte</span></div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem;">
+        <div class="section-header">
+            <h2>Kritische Projekte (Handlungsbedarf)</h2>
+        </div>
+        <div class="modern-table-wrapper">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>Projekt</th>
+                        <th style="text-align: center;">Status</th>
+                        <th>Letzter Bericht</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in projects if p.steering_status.value == 'RED' or p.steering_status.value == 'YELLOW' %}
+                    <tr>
+                        <td><strong>{{ p.name }}</strong></td>
+                        <td style="text-align: center;">
+                            {% if p.steering_status.value == 'RED' %}
+                                <span class="badge" style="background-color: #ef4444; color: white;">Kritisch</span>
+                            {% else %}
+                                <span class="badge" style="background-color: #eab308; color: white;">Achtung</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 0.85rem;">{{ p.steering_details[:100] }}{{ '...' if p.steering_details|length > 100 else '' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" style="text-align: center; padding: 2rem; color: var(--text-muted);">Keine kritischen Projekte in dieser Auswahl.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
-    <style>
-        .project-name-link {
-            text-decoration: none;
-            color: var(--primary-dark);
-            font-weight: 700;
-            font-size: 1.05rem;
-            transition: all 0.2s;
-        }
-        .project-name-link:hover {
-            color: var(--primary-color);
-            text-decoration: underline;
-        }
-        .modern-table td {
-            vertical-align: middle;
-            padding: 1.25rem 1rem;
-        }
-        .modern-table th {
-            white-space: nowrap;
-        }
-    </style>
+<script>
+    function showContentTab(tabId) {
+        // Hide all contents
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.style.display = 'none';
+        });
+        // Remove active class from content tabs only
+        // We use a specific selector to not interfere with the division tabs (which are links)
+        document.querySelectorAll('.tabs-container .tab-item').forEach(tab => {
+            if (tab.tagName === 'BUTTON') {
+                tab.classList.remove('active');
+            }
+        });
+        
+        // Show selected content
+        document.getElementById('tab-content-' + tabId).style.display = 'block';
+        // Add active class to selected tab
+        document.getElementById('tab-' + tabId).classList.add('active');
+
+        // Update URL query parameter without full reload
+        const url = new URL(window.location);
+        url.searchParams.set('tab', tabId);
+        window.history.pushState({}, '', url);
+
+        // Update division links to include the current tab
+        document.querySelectorAll('.tabs-container:first-child .tab-item').forEach(link => {
+            if (link.tagName === 'A') {
+                const linkUrl = new URL(link.href, window.location.origin);
+                linkUrl.searchParams.set('tab', tabId);
+                link.href = linkUrl.pathname + linkUrl.search;
+            }
+        });
+    }
+</script>
+
+<style>
+    .project-name-link {
+        text-decoration: none;
+        color: var(--primary-dark);
+        font-weight: 700;
+        font-size: 1.05rem;
+        transition: all 0.2s;
+    }
+    .project-name-link:hover {
+        color: var(--primary-color);
+        text-decoration: underline;
+    }
+    .modern-table td {
+        vertical-align: top;
+        padding: 1.25rem 1rem;
+    }
+    .modern-table th {
+        white-space: nowrap;
+    }
+</style>
 {% endblock %}

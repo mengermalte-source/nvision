@@ -751,6 +751,10 @@ body.sidebar-expanded .main-wrapper {
     font-size: 0.9rem;
     border-radius: var(--radius-md);
     transition: all 0.2s;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
 }
 
 .tab-item:hover {
