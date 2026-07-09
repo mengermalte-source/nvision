@@ -65,12 +65,24 @@
                 <!-- Workflow Pipeline -->
                 <div class="workflow-steps">
                     <div class="step {% if p.pab_status.value in ['evaluation', 'revision', 'confirmed', 'approved'] %}active{% endif %} {% if p.pab_status.value == 'revision' %}revision{% endif %}" title="Evaluierung">
-                        <div class="step-icon">1</div>
+                        <div class="step-icon">
+                            {% if p.pab_status.value in ['confirmed', 'approved'] %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            {% else %}
+                                1
+                            {% endif %}
+                        </div>
                         <div class="step-label">Draft</div>
                     </div>
                     <div class="step-line {% if p.pab_status.value in ['confirmed', 'approved'] %}active{% endif %}"></div>
                     <div class="step {% if p.pab_status.value in ['confirmed', 'approved'] %}active{% endif %}" title="IT-Bestätigung">
-                        <div class="step-icon">2</div>
+                        <div class="step-icon">
+                            {% if p.pab_status.value == 'approved' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            {% else %}
+                                2
+                            {% endif %}
+                        </div>
                         <div class="step-label">IT-Konf.</div>
                     </div>
                     <div class="step-line {% if p.pab_status.value == 'approved' %}active{% endif %}"></div>
@@ -107,7 +119,8 @@
             <div class="pab-card-footer">
                 <div class="footer-left">
                     {% set unread_count = p.pab_comments | selectattr('is_read', 'equalto', false) | selectattr('author_id', 'ne', request.state.user.id) | list | length %}
-                    <button class="btn-icon-text pab-comment-btn" data-project-id="{{ p.id }}">
+                    {% set total_comments = p.pab_comments | length %}
+                    <button class="btn-icon-text pab-comment-btn {% if unread_count > 0 %}has-unread{% elif total_comments > 0 %}has-comments{% endif %}" data-project-id="{{ p.id }}" title="Feedback und Rückfragen">
                         <div style="position: relative; display: flex; align-items: center; gap: 0.5rem;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                             <span>Feedback</span>
@@ -118,31 +131,44 @@
                     </button>
                 </div>
                 <div class="footer-actions">
-                    {% if p.pab_status.value == 'evaluation' or p.pab_status.value == 'revision' or (p.pab_status.value == 'approved' and request.state.user.role.name == 'ADMIN') %}
-                        {% if request.state.user.role.name == 'ADMIN' or p.responsible_it == request.state.user.username %}
-                        <form action="/ui/pab/{{ p.id }}/status" method="POST">
-                            <input type="hidden" name="new_status" value="confirmed">
-                            <button type="submit" class="btn-workflow btn-confirm">IT Bestätigen</button>
-                        </form>
-                        {% endif %}
-                    {% endif %}
-
-                    {% if request.state.user.role.name == 'ADMIN' %}
-                        {% if p.pab_status.value != 'revision' and p.pab_status.value != 'approved' %}
-                        <button class="btn-workflow btn-revision pab-revision-btn" data-project-id="{{ p.id }}">Rückfrage</button>
-                        {% endif %}
-                        
-                        {% if p.pab_status.value == 'confirmed' %}
-                        <form action="/ui/pab/{{ p.id }}/status" method="POST">
-                            <input type="hidden" name="new_status" value="approved">
-                            <button type="submit" class="btn-workflow btn-approve">PAB Freigabe</button>
-                        </form>
-                        {% elif p.pab_status.value == 'approved' %}
-                        <form action="/ui/pab/{{ p.id }}/status" method="POST">
+                    {% if p.pab_status.value == 'approved' %}
+                        <div class="status-confirmed-badge">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            Freigegeben
+                        </div>
+                        {% if request.state.user.role.name == 'ADMIN' %}
+                        <form action="/ui/pab/{{ p.id }}/status" method="POST" style="display:inline;">
                             <input type="hidden" name="new_status" value="evaluation">
-                            <button type="submit" class="btn-workflow btn-reset">Reset</button>
+                            <button type="submit" class="btn-workflow btn-reset" title="Freigabe zurücknehmen und Projekt bearbeitbar machen">Reset</button>
                         </form>
                         {% endif %}
+                    {% else %}
+                        {# Projekte im Prozess #}
+                        <div class="action-group">
+                            {% if request.state.user.role.name == 'ADMIN' %}
+                                <button class="btn-workflow btn-revision pab-revision-btn" data-project-id="{{ p.id }}">Rückfrage</button>
+                            {% endif %}
+
+                            {% if p.pab_status.value in ['evaluation', 'revision'] %}
+                                {% if request.state.user.role.name == 'ADMIN' or p.responsible_it == request.state.user.username %}
+                                <form action="/ui/pab/{{ p.id }}/status" method="POST" style="display:inline;">
+                                    <input type="hidden" name="new_status" value="confirmed">
+                                    <button type="submit" class="btn-workflow btn-confirm primary-action">IT Bestätigen</button>
+                                </form>
+                                {% else %}
+                                <span class="action-hint">Warte auf IT-Bestätigung</span>
+                                {% endif %}
+                            {% elif p.pab_status.value == 'confirmed' %}
+                                {% if request.state.user.role.name == 'ADMIN' %}
+                                <form action="/ui/pab/{{ p.id }}/status" method="POST" style="display:inline;">
+                                    <input type="hidden" name="new_status" value="approved">
+                                    <button type="submit" class="btn-workflow btn-approve primary-action">PAB Freigabe</button>
+                                </form>
+                                {% else %}
+                                <span class="action-hint">Warte auf PAB-Freigabe</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -260,8 +286,11 @@
         document.getElementById('commentModal-' + projectId).style.display = 'flex';
         fetch('/ui/pab/' + projectId + '/mark-read', { method: 'POST' }).then(() => {
             const btn = document.querySelector(`.pab-comment-btn[data-project-id="${projectId}"]`);
-            const badge = btn?.querySelector('.notification-badge');
-            if (badge) badge.remove();
+            if (btn) {
+                btn.classList.remove('has-unread');
+                const badge = btn.querySelector('.notification-badge');
+                if (badge) badge.remove();
+            }
         });
     }
 
@@ -485,6 +514,22 @@
         color: var(--text-color);
         border-color: var(--text-muted);
     }
+    .pab-comment-btn.has-comments {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        background: #f0f7ff;
+    }
+    .pab-comment-btn.has-unread {
+        background: #fff1f2;
+        border-color: var(--danger);
+        color: var(--danger);
+        animation: pulse-border 2s infinite;
+    }
+    @keyframes pulse-border {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
     .notification-badge {
         background: var(--danger);
         color: white;
@@ -515,6 +560,42 @@
     .btn-approve:hover { background: var(--primary-hover); }
     .btn-reset { background: #fee2e2; color: #b91c1c; }
     .btn-reset:hover { background: #fecaca; }
+    
+    .primary-action {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transform: translateY(-1px);
+    }
+    .primary-action:active {
+        transform: translateY(0);
+    }
+    
+    .action-group {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+    
+    .action-hint {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-style: italic;
+        background: #f1f5f9;
+        padding: 0.4rem 0.75rem;
+        border-radius: var(--radius-sm);
+    }
+    
+    .status-confirmed-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: var(--success);
+        font-weight: 700;
+        font-size: 0.95rem;
+        padding: 0.5rem 0.75rem;
+        background: #f0fdf4;
+        border-radius: var(--radius-md);
+        border: 1px solid #bbf7d0;
+    }
 
     /* Modal improvements */
     .comment-feed {
