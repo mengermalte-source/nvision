@@ -184,7 +184,7 @@ def login(response: RedirectResponse, username: str = Form(...), password: str =
         return RedirectResponse(url="/login?error=Invalid credentials", status_code=status.HTTP_303_SEE_OTHER)
     
     access_token = create_access_token(data={"sub": user.username})
-    response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+    response = RedirectResponse(url="/ui/projects", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(key="access_token", value=access_token, httponly=True, samesite="lax")
     return response
 
@@ -214,6 +214,10 @@ def calculate_project_progress(project: models.Project, db: Session):
 # --- UI Routes ---
 
 @app.get("/", response_class=HTMLResponse)
+def root():
+    return RedirectResponse(url="/ui/projects")
+
+@app.get("/ui/heatmap", response_class=HTMLResponse)
 def ui_heatmap(request: Request, year: Optional[int] = None, team_id: Optional[int] = Query(None), db: Session = Depends(get_db)):
     if not request.state.user:
         return RedirectResponse(url="/login")
@@ -374,7 +378,7 @@ def ui_projects(request: Request, division: Optional[str] = None, show_completed
 @app.get("/ui/bookings", response_class=HTMLResponse)
 def ui_bookings(request: Request, project_id: Optional[int] = Query(None), db: Session = Depends(get_db)):
     if not request.state.user or request.state.user.role != models.UserRole.EMPLOYEE:
-        return RedirectResponse(url="/")
+        return RedirectResponse(url="/ui/projects")
     
     assigned_projects = db.query(models.Project).join(models.Staffing).filter(
         models.Staffing.employee_id == request.state.user.employee_id,
