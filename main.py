@@ -255,13 +255,11 @@ def ui_steering_board(request: Request, division: Optional[str] = None, db: Sess
         
     projects = query.order_by(models.Project.priority.asc(), models.Project.end_date.asc()).all()
     
-    divisions = [d[0] for d in db.query(models.Project.division).distinct().all() if d[0]]
     employees = db.query(models.Employee).order_by(models.Employee.name).all()
     
     return templates.TemplateResponse(
         request=request, name="steering_board.html", context={
             "projects": projects,
-            "divisions": sorted(divisions),
             "employees": employees,
             "selected_division": division,
             "active_page": "steering",

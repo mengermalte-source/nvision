@@ -1,28 +1,20 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="steering-board-header" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end;">
-    <div>
-        <p style="color: var(--text-muted); margin-top: 0.5rem;">Übersicht aller aktiven Projekte und deren aktueller Lenkungs-Status.</p>
-    </div>
-    
-    <div class="filters card" style="margin-bottom: 0; padding: 1rem; display: flex; gap: 1rem; align-items: center;">
-        <div class="filter-group">
-            <label for="divisionFilter" style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Bereich</label>
-            <select id="divisionFilter" onchange="window.location.href='/ui/steering?division=' + this.value" style="padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color); background: white; min-width: 150px;">
-                <option value="">Alle Bereiche</option>
-                {% for d in divisions %}
-                <option value="{{ d }}" {% if selected_division == d %}selected{% endif %}>{{ d }}</option>
-                {% endfor %}
-            </select>
+<div class="tabs-container" style="display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1.5rem;">
+    <div class="tabs" style="background: #f8fafc; padding: 0.4rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; gap: 0.4rem; overflow-x: auto;">
+            <a href="/ui/steering" class="tab-item {% if not selected_division %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm); white-space: nowrap;">Alle Sparten</a>
+            <a href="/ui/steering?division=IT" class="tab-item {% if selected_division == 'IT' %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm);">IT</a>
+            <a href="/ui/steering?division=Netzgesellschaft" class="tab-item {% if selected_division == 'Netzgesellschaft' %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm);">Netz</a>
+            <a href="/ui/steering?division=Vertrieb" class="tab-item {% if selected_division == 'Vertrieb' %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm);">Vertrieb</a>
+            <a href="/ui/steering?division=Kraftwerk" class="tab-item {% if selected_division == 'Kraftwerk' %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm);">Kraftwerk</a>
         </div>
-        <div class="filter-group">
-             <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Legende</label>
-             <div style="display: flex; gap: 0.75rem; align-items: center; font-size: 0.85rem;">
-                 <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot green" style="width: 12px; height: 12px;"></span> OK</span>
-                 <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot yellow" style="width: 12px; height: 12px;"></span> Achtung</span>
-                 <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot red" style="width: 12px; height: 12px;"></span> Kritisch</span>
-             </div>
+        <div class="filter-legend" style="padding-right: 1rem; display: flex; gap: 0.75rem; align-items: center; font-size: 0.85rem; color: var(--text-muted);">
+             <span style="font-weight: 600;">Legende:</span>
+             <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot green" style="width: 12px; height: 12px;"></span> OK</span>
+             <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot yellow" style="width: 12px; height: 12px;"></span> Achtung</span>
+             <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot red" style="width: 12px; height: 12px;"></span> Kritisch</span>
         </div>
     </div>
 </div>
