@@ -243,12 +243,15 @@ def ui_heatmap(request: Request, year: Optional[int] = None, team_id: Optional[i
         }
     )
 
-@app.get("/ui/steering", response_class=HTMLResponse)
-def ui_steering_board(request: Request, division: Optional[str] = None, db: Session = Depends(get_db)):
+@app.get("/ui/projektlenkung", response_class=HTMLResponse)
+def ui_projektlenkung(request: Request, division: Optional[str] = None, db: Session = Depends(get_db)):
     if not request.state.user:
         return RedirectResponse(url="/login")
     
-    query = db.query(models.Project).filter(models.Project.status != models.ProjectStatus.COMPLETED)
+    query = db.query(models.Project).filter(
+        models.Project.status != models.ProjectStatus.COMPLETED,
+        models.Project.has_steering_board == True
+    )
     
     if division:
         query = query.filter(models.Project.division == division)
@@ -262,8 +265,8 @@ def ui_steering_board(request: Request, division: Optional[str] = None, db: Sess
             "projects": projects,
             "employees": employees,
             "selected_division": division,
-            "active_page": "steering",
-            "title": "Steering Board"
+            "active_page": "projektlenkung",
+            "title": "Projektlenkung"
         }
     )
 
@@ -314,8 +317,8 @@ def get_capacity_detail(employee_id: int, year: int, month: int, db: Session = D
         free_capacity_fte=total_cap - service_cap - staffed_cap
     )
 
-@app.post("/ui/steering/assign")
-def ui_steering_assign(project_id: int = Form(...), employee_id: int = Form(...), db: Session = Depends(get_db), user: models.User = Depends(login_required)):
+@app.post("/ui/projektlenkung/assign")
+def ui_projektlenkung_assign(project_id: int = Form(...), employee_id: int = Form(...), db: Session = Depends(get_db), user: models.User = Depends(login_required)):
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
     
@@ -324,10 +327,10 @@ def ui_steering_assign(project_id: int = Form(...), employee_id: int = Form(...)
             project.steering_members.append(employee)
             db.commit()
             
-    return RedirectResponse(url="/ui/steering", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/ui/projektlenkung", status_code=status.HTTP_303_SEE_OTHER)
 
-@app.post("/ui/steering/unassign")
-def ui_steering_unassign(project_id: int = Form(...), employee_id: int = Form(...), db: Session = Depends(get_db), user: models.User = Depends(login_required)):
+@app.post("/ui/projektlenkung/unassign")
+def ui_projektlenkung_unassign(project_id: int = Form(...), employee_id: int = Form(...), db: Session = Depends(get_db), user: models.User = Depends(login_required)):
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
     
@@ -336,7 +339,7 @@ def ui_steering_unassign(project_id: int = Form(...), employee_id: int = Form(..
             project.steering_members.remove(employee)
             db.commit()
             
-    return RedirectResponse(url="/ui/steering", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/ui/projektlenkung", status_code=status.HTTP_303_SEE_OTHER)
 
 def get_annual_heatmap(year: int, db: Session, team_id: Optional[int] = None):
     query = db.query(models.Employee)
@@ -506,6 +509,7 @@ def ui_add_project(
     pt_extern_planned: float = Form(0.0),
     economic_score: float = Form(0.0),
     business_case: Optional[str] = Form(None),
+    has_steering_board: bool = Form(False),
     steering_status: models.SteeringStatus = Form(models.SteeringStatus.NONE),
     steering_time: models.SteeringStatus = Form(models.SteeringStatus.NONE),
     steering_budget: models.SteeringStatus = Form(models.SteeringStatus.NONE),
@@ -518,6 +522,17 @@ def ui_add_project(
     db: Session = Depends(get_db),
     user: models.User = Depends(admin_required)
 ):
+    # Strip whitespace from string fields
+    name = name.strip() if name else name
+    description = description.strip() if description else description
+    business_value = business_value.strip() if business_value else business_value
+    internal_number = internal_number.strip() if internal_number else internal_number
+    responsible_it = responsible_it.strip() if responsible_it else responsible_it
+    responsible_fb = responsible_fb.strip() if responsible_fb else responsible_fb
+    cats_number = cats_number.strip() if cats_number else cats_number
+    business_case = business_case.strip() if business_case else business_case
+    steering_details = steering_details.strip() if steering_details else steering_details
+
     db_project = models.Project(
         name=name,
         description=description,
@@ -537,12 +552,13 @@ def ui_add_project(
         pt_extern_planned=pt_extern_planned,
         economic_score=economic_score,
         business_case=business_case,
+        has_steering_board=has_steering_board,
         steering_status=steering_status,
         steering_time=steering_time,
         steering_budget=steering_budget,
         steering_quality=steering_quality,
         steering_details=steering_details,
-        steering_last_update=date.today() if any(s != models.SteeringStatus.NONE for s in [steering_status, steering_time, steering_budget, steering_quality]) else None,
+        steering_last_update=date.today() if any(s != models.SteeringStatus.NONE for s in [steering_status, steering_time, steering_budget, steering_quality]) or steering_details else None,
         budget_total_invest=budget_total_invest,
         budget_total_unterhalt=budget_total_unterhalt
     )
@@ -604,6 +620,7 @@ def ui_edit_project(
     pt_extern_planned: float = Form(0.0),
     economic_score: float = Form(0.0),
     business_case: Optional[str] = Form(None),
+    has_steering_board: bool = Form(False),
     steering_status: models.SteeringStatus = Form(models.SteeringStatus.NONE),
     steering_time: models.SteeringStatus = Form(models.SteeringStatus.NONE),
     steering_budget: models.SteeringStatus = Form(models.SteeringStatus.NONE),
@@ -616,6 +633,17 @@ def ui_edit_project(
     db: Session = Depends(get_db),
     user: models.User = Depends(admin_required)
 ):
+    # Strip whitespace from string fields
+    name = name.strip() if name else name
+    description = description.strip() if description else description
+    business_value = business_value.strip() if business_value else business_value
+    internal_number = internal_number.strip() if internal_number else internal_number
+    responsible_it = responsible_it.strip() if responsible_it else responsible_it
+    responsible_fb = responsible_fb.strip() if responsible_fb else responsible_fb
+    cats_number = cats_number.strip() if cats_number else cats_number
+    business_case = business_case.strip() if business_case else business_case
+    steering_details = steering_details.strip() if steering_details else steering_details
+
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -638,6 +666,7 @@ def ui_edit_project(
     project.pt_extern_planned = pt_extern_planned
     project.economic_score = economic_score
     project.business_case = business_case
+    project.has_steering_board = has_steering_board
     project.budget_total_invest = budget_total_invest
     project.budget_total_unterhalt = budget_total_unterhalt
 
@@ -879,6 +908,7 @@ def ui_pab_update_status(
     project.pab_status = new_status
     
     if comment:
+        comment = comment.strip()
         db_comment = models.ProjectComment(
             project_id=project_id,
             author_id=user.id,
@@ -903,6 +933,7 @@ def ui_pab_add_comment(
     db: Session = Depends(get_db),
     user: models.User = Depends(login_required)
 ):
+    text = text.strip()
     db_comment = models.ProjectComment(
         project_id=project_id,
         author_id=user.id,

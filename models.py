@@ -122,6 +122,7 @@ class Project(Base):
     # Budget-Felder (Gesamtlaufzeit)
     budget_total_invest = Column(Float, default=0.0)
     budget_total_unterhalt = Column(Float, default=0.0)
+    has_steering_board = Column(Boolean, default=False)
 
     staffings = relationship("Staffing", back_populates="project")
     bookings = relationship("Booking", back_populates="project")

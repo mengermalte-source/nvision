@@ -98,6 +98,16 @@
                         {% endif %}
                     </div>
                 </div>
+                <div class="detail-item">
+                    <div class="detail-label">Projektlenkung</div>
+                    <div class="detail-value">
+                        {% if project.has_steering_board %}
+                        <span class="badge" style="background-color: var(--primary-color); color: white;">Aktiv</span>
+                        {% else %}
+                        <span class="badge badge-default">Deaktiviert</span>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
 
             <div style="margin-top: 1rem;">
@@ -147,7 +157,7 @@
         <!-- Steuerungs-Card -->
         <div class="card" style="margin-bottom: 0;">
             <div class="section-header">
-                <h2>Projektsteuerung</h2>
+                <h2>Projektlenkung</h2>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                     {% if project.steering_status.value == 'GREEN' %}
                         <span class="badge" style="background-color: #22c55e; color: white;" data-tooltip="Gesamtstatus">GRÜN</span>
@@ -179,7 +189,7 @@
             
             <div style="margin-bottom: 1rem;">
                 <div class="detail-label">Aktueller Statusbericht</div>
-                <div style="margin-top: 0.5rem; font-size: 0.95rem; line-height: 1.5; color: var(--text-dark); white-space: pre-wrap;">{{ project.steering_details if project.steering_details else 'Kein Bericht vorhanden.' }}</div>
+                <div style="margin-top: 0.5rem; font-size: 0.95rem; line-height: 1.5; color: var(--text-dark); white-space: pre-wrap;">{{ project.steering_details.strip() if project.steering_details else 'Kein Bericht vorhanden.' }}</div>
             </div>
             
             <div style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
@@ -196,7 +206,7 @@
                 <h2>Projektbeschreibung</h2>
             </div>
             <div style="color: #334155; line-height: 1.6; white-space: pre-wrap; flex: 1;">
-                {{ project.description if project.description else 'Keine Beschreibung hinterlegt.' }}
+                {{ project.description.strip() if project.description else 'Keine Beschreibung hinterlegt.' }}
             </div>
         </div>
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column;">
