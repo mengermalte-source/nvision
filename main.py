@@ -1186,36 +1186,50 @@ E-020;Dashboard 'Eco-Transparency';Echtzeit-Anzeige des regionalen Strommix;Öff
     end_booking_date = date(2026, 7, 1)
     project_booked_hours_seed = {}
 
-    for s in staffings[:150]:
+    # Wir nehmen mehr Staffings für Buchungen (vorher 150)
+    for s in staffings:
+        # Zufällig entscheiden, ob dieser Mitarbeiter für dieses Projekt gebucht hat (ca. 70% Chance)
+        if random.random() > 0.7: continue
+
         proj = next((p for p in all_imported_projects if p.id == s.project_id), None)
         if not proj: continue
             
         total_planned_hours = (proj.pt_intern_planned + proj.pt_extern_planned) * 8.0
-        if total_planned_hours <= 0: continue
+        if total_planned_hours <= 0: 
+            total_planned_hours = 80.0 # Fallback
 
         if proj.id not in project_booked_hours_seed:
             project_booked_hours_seed[proj.id] = {
                 "current": 0.0,
-                "target": total_planned_hours * random.uniform(0.1, 0.9)
+                "target": total_planned_hours * random.uniform(0.2, 0.8)
             }
         
-        for week in range(20):
-            booking_date = s.start_date + timedelta(weeks=week, days=random.randint(0, 4))
-            if booking_date < end_booking_date:
-                remaining = project_booked_hours_seed[proj.id]["target"] - project_booked_hours_seed[proj.id]["current"]
-                if remaining <= 0: break
-                hours_suggestion = s.capacity_fte * 40 * random.uniform(0.5, 1.0)
-                hours = min(hours_suggestion, remaining)
-                if hours > 0.1:
-                    b = models.Booking(
-                        employee_id=s.employee_id,
-                        project_id=s.project_id,
-                        date=booking_date,
-                        hours=round(hours, 1),
-                        description="Projektarbeit gemäß Staffing"
-                    )
-                    bookings.append(b)
-                    project_booked_hours_seed[proj.id]["current"] += round(hours, 1)
+        # Wöchentliche Buchungen bis zum Stichtag
+        current_date = s.start_date
+        while current_date < end_booking_date:
+            # Nur an Wochentagen buchen (Mo-Fr)
+            if current_date.weekday() < 5:
+                # Nicht jeden Tag buchen
+                if random.random() > 0.3:
+                    remaining = project_booked_hours_seed[proj.id]["target"] - project_booked_hours_seed[proj.id]["current"]
+                    if remaining <= 0: break
+                    
+                    # Stunden basierend auf FTE (z.B. 0.2 FTE -> ca 1.6h pro Tag)
+                    hours_suggestion = s.capacity_fte * 8.0 * random.uniform(0.8, 1.2)
+                    hours = min(hours_suggestion, remaining)
+                    
+                    if hours > 0.1:
+                        b = models.Booking(
+                            employee_id=s.employee_id,
+                            project_id=s.project_id,
+                            date=current_date,
+                            hours=round(hours, 1),
+                            description="Projektarbeit gemäß Staffing"
+                        )
+                        bookings.append(b)
+                        project_booked_hours_seed[proj.id]["current"] += round(hours, 1)
+            
+            current_date += timedelta(days=1)
     
     db.add_all(bookings)
     
@@ -1228,8 +1242,8 @@ E-020;Dashboard 'Eco-Transparency';Echtzeit-Anzeige des regionalen Strommix;Öff
     )
     db.add(alice_user)
     
-    # Süd-Link Status Korrektur (falls der Seed-Import ihn nicht auf Revision setzt)
-    sl = db.query(models.Project).filter(models.Project.id == 19).first()
+    # Süd-Link Status Korrektur (Suche über Namen, da IDs nach Reset variieren können)
+    sl = db.query(models.Project).filter(models.Project.name.like("%Süd-Link-Connect%")).first()
     if sl:
         sl.pab_status = models.PABStatus.REVISION
 
