@@ -114,6 +114,7 @@ class ProjectComment(Base):
     text = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
     is_pab_relevant = Column(Boolean, default=True)
+    is_read = Column(Boolean, default=False)
 
     project = relationship("Project", back_populates="pab_comments")
     author = relationship("User")

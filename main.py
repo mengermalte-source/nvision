@@ -648,12 +648,13 @@ def ui_add_employee(
 # --- PAB MODULE ---
 
 @app.get("/ui/pab", response_class=HTMLResponse)
-def ui_pab_list(request: Request, division: Optional[str] = None, show_completed: bool = Query(False), db: Session = Depends(get_db), user: models.User = Depends(login_required)):
-    # Wir zeigen alle Projekte an, die noch nicht APPROVED sind (oder alle wenn show_completed=True), die PAB-relevant sind.
+def ui_pab_list(request: Request, division: Optional[str] = None, show_approved: bool = Query(True), db: Session = Depends(get_db), user: models.User = Depends(login_required)):
+    # Wir zeigen alle Projekte an, die PAB-relevant sind.
+    # show_approved steuert, ob bereits APPROVED Projekte angezeigt werden.
     # Für das Forced Ranking sortieren wir nach pab_rank.
     query = db.query(models.Project)
     
-    if not show_completed:
+    if not show_approved:
         query = query.filter(models.Project.pab_status != models.PABStatus.APPROVED)
         
     if division:
@@ -667,7 +668,7 @@ def ui_pab_list(request: Request, division: Optional[str] = None, show_completed
             "active_page": "pab",
             "PABStatus": models.PABStatus,
             "selected_division": division,
-            "show_completed": show_completed
+            "show_approved": show_approved
         }
     )
 
@@ -700,6 +701,10 @@ def ui_pab_update_status(
     elif new_status == models.PABStatus.APPROVED:
         if user.role != models.UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Nur Admins können final freigeben")
+    elif new_status == models.PABStatus.EVALUATION:
+        # Reset: Nur Admin
+        if user.role != models.UserRole.ADMIN:
+             raise HTTPException(status_code=403, detail="Nur Admins können den Status zurücksetzen")
             
     project.pab_status = new_status
     
@@ -731,6 +736,21 @@ def ui_pab_add_comment(
     db.add(db_comment)
     db.commit()
     return RedirectResponse(url="/ui/pab", status_code=303)
+
+@app.post("/ui/pab/{project_id}/mark-read")
+def ui_pab_mark_read(
+    project_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(login_required)
+):
+    # Alle Kommentare dieses Projekts als gelesen markieren
+    # (Optional: Nur für diesen User, aber hier machen wir es global für das PAB-Board)
+    db.query(models.ProjectComment).filter(
+        models.ProjectComment.project_id == project_id,
+        models.ProjectComment.author_id != user.id
+    ).update({models.ProjectComment.is_read: True}, synchronize_session=False)
+    db.commit()
+    return {"status": "ok"}
 
 @app.get("/ui/employees/{employee_id}/plan", response_class=HTMLResponse)
 def ui_employee_plan(request: Request, employee_id: int, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
