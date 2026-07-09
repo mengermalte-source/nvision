@@ -2,37 +2,51 @@
 
 {% block content %}
 <div class="pab-container">
-    <div class="project-table-header" style="margin-bottom: 2rem;">
-        <div>
-            <h2>Public Advisory Board</h2>
-            <p class="text-muted" style="margin-top: 0.5rem;">Forced Ranking & Freigabeprozess. Priorisieren Sie die Maßnahmen per Drag & Drop.</p>
+    <div class="project-table-header" style="margin-bottom: 1rem;">
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <h2 style="margin: 0;">Public Advisory Board</h2>
+                {% if request.state.user.role.name == 'ADMIN' %}
+                <form action="/seed/" method="POST" onsubmit="return confirm('Möchten Sie wirklich die gesamte Datenbank auf den Seed-Zustand zurücksetzen? Alle manuellen Änderungen gehen verloren!')">
+                    <button type="submit" class="btn-workflow" style="background: var(--danger); color: white; border: none; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                        DB Reset (Seed)
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            <p class="text-muted" style="margin: 0;">Forced Ranking & Freigabeprozess. Priorisieren Sie die Maßnahmen per Drag & Drop.</p>
         </div>
     </div>
 
-    <div class="tabs" style="margin-bottom: 2rem; background: white; padding: 0.5rem; border-radius: var(--radius-md); box-shadow: var(--card-shadow);">
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+    <div class="tabs-container" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
+        <!-- Haupt-Tabs: Freigabestatus -->
+        <div class="tabs" style="background: white; padding: 0.5rem; border-radius: var(--radius-md); box-shadow: var(--card-shadow);">
             <div style="display: flex; gap: 0.5rem;">
-                <a href="/ui/pab?{% if show_approved %}show_approved=true{% endif %}" class="tab-item {% if not selected_division %}active{% endif %}" style="border-radius: var(--radius-sm);">Alle</a>
-                <a href="/ui/pab?division=IT{% if show_approved %}&show_approved=true{% endif %}" class="tab-item {% if selected_division == 'IT' %}active{% endif %}" style="border-radius: var(--radius-sm);">IT</a>
-                <a href="/ui/pab?division=Netzgesellschaft{% if show_approved %}&show_approved=true{% endif %}" class="tab-item {% if selected_division == 'Netzgesellschaft' %}active{% endif %}" style="border-radius: var(--radius-sm);">Netz</a>
-                <a href="/ui/pab?division=Vertrieb{% if show_approved %}&show_approved=true{% endif %}" class="tab-item {% if selected_division == 'Vertrieb' %}active{% endif %}" style="border-radius: var(--radius-sm);">Vertrieb</a>
-                <a href="/ui/pab?division=Kraftwerk{% if show_approved %}&show_approved=true{% endif %}" class="tab-item {% if selected_division == 'Kraftwerk' %}active{% endif %}" style="border-radius: var(--radius-sm);">Kraftwerk</a>
+                <a href="/ui/pab?show_approved=false{% if selected_division %}&division={{ selected_division }}{% endif %}" class="tab-item {% if not show_approved %}active{% endif %}" style="flex: 1; text-align: center; border-radius: var(--radius-sm);">
+                    In Bearbeitung
+                </a>
+                <a href="/ui/pab?show_approved=true{% if selected_division %}&division={{ selected_division }}{% endif %}" class="tab-item {% if show_approved %}active{% endif %}" style="flex: 1; text-align: center; border-radius: var(--radius-sm);">
+                    Freigegeben
+                </a>
             </div>
-            <div style="padding-right: 1rem;">
-                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer; color: var(--text-muted);">
-                    <input type="checkbox" id="showApprovedCheck" {% if show_approved %}checked{% endif %} onchange="toggleApproved(this)">
-                    <span>Freigegebene anzeigen</span>
-                </label>
+        </div>
+
+        <!-- Sekundäre Tabs: Sparten -->
+        <div class="tabs" style="background: #f8fafc; padding: 0.4rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <div style="display: flex; gap: 0.4rem; overflow-x: auto;">
+                <a href="/ui/pab?show_approved={{ 'true' if show_approved else 'false' }}" class="tab-item {% if not selected_division %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm); white-space: nowrap;">Alle Sparten</a>
+                <a href="/ui/pab?division=IT&show_approved={{ 'true' if show_approved else 'false' }}" class="tab-item {% if selected_division == 'IT' %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm);">IT</a>
+                <a href="/ui/pab?division=Netzgesellschaft&show_approved={{ 'true' if show_approved else 'false' }}" class="tab-item {% if selected_division == 'Netzgesellschaft' %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm);">Netz</a>
+                <a href="/ui/pab?division=Vertrieb&show_approved={{ 'true' if show_approved else 'false' }}" class="tab-item {% if selected_division == 'Vertrieb' %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm);">Vertrieb</a>
+                <a href="/ui/pab?division=Kraftwerk&show_approved={{ 'true' if show_approved else 'false' }}" class="tab-item {% if selected_division == 'Kraftwerk' %}active{% endif %}" style="font-size: 0.85rem; border-radius: var(--radius-sm);">Kraftwerk</a>
             </div>
         </div>
     </div>
 
     <script>
-    function toggleApproved(checkbox) {
-        const url = new URL(window.location.href);
-        url.searchParams.set('show_approved', checkbox.checked ? 'true' : 'false');
-        window.location.href = url.toString();
-    }
+    document.addEventListener('DOMContentLoaded', function() {
+        // ... any initialization ...
+    });
     </script>
 
     <div id="pab-sortable" class="pab-grid">
@@ -52,6 +66,8 @@
                             {% endif %}
                             <span class="meta-divider">|</span>
                             <span>IT: {{ p.responsible_it or '-' }}</span>
+                            <span class="meta-divider">|</span>
+                            <span class="division-badge">{{ p.division or 'Unbekannt' }}</span>
                         </div>
                     </div>
                 </div>
@@ -168,10 +184,10 @@
                                 {% endif %}
                             {% elif p.pab_status.value == 'confirmed' %}
                                 {% if request.state.user.role.name == 'ADMIN' %}
-                                <form action="/ui/pab/{{ p.id }}/status" method="POST" style="display:inline;">
-                                    <input type="hidden" name="new_status" value="approved">
-                                    <button type="submit" class="btn-workflow btn-approve primary-action">PAB Freigabe</button>
-                                </form>
+                                    <form action="/ui/pab/{{ p.id }}/status" method="POST" style="display:inline;">
+                                        <input type="hidden" name="new_status" value="approved">
+                                        <button type="submit" class="btn-workflow btn-approve primary-action">PAB Freigabe</button>
+                                    </form>
                                 {% else %}
                                 <span class="action-hint" style="padding: 0.35rem 0.6rem; font-size: 0.75rem;">Warte auf PAB</span>
                                 {% endif %}
@@ -319,7 +335,7 @@
     .pab-container {
         max-width: 1400px;
         margin: 0 auto;
-        padding: 1rem;
+        padding: 0.5rem 1rem;
     }
     .pab-grid {
         display: flex;
@@ -393,6 +409,8 @@
         text-overflow: ellipsis;
         flex: 1;
         min-width: 0;
+        position: relative;
+        z-index: 100;
     }
     .pab-project-name:hover {
         color: var(--primary-color);
@@ -529,6 +547,8 @@
         min-width: 280px;
         justify-content: center;
         flex-shrink: 0;
+        position: relative;
+        z-index: 1;
     }
     .btn-icon-text {
         background: transparent;
@@ -711,6 +731,14 @@
             flex-wrap: wrap;
             justify-content: flex-end;
         }
+    }
+    .division-badge {
+        background: #f1f5f9;
+        color: var(--text-muted);
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
     }
 </style>
 {% endblock %}

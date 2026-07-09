@@ -648,13 +648,18 @@ def ui_add_employee(
 # --- PAB MODULE ---
 
 @app.get("/ui/pab", response_class=HTMLResponse)
-def ui_pab_list(request: Request, division: Optional[str] = None, show_approved: bool = Query(True), db: Session = Depends(get_db), user: models.User = Depends(login_required)):
+def ui_pab_list(request: Request, division: Optional[str] = None, show_approved: str = Query("false"), db: Session = Depends(get_db), user: models.User = Depends(login_required)):
     # Wir zeigen alle Projekte an, die PAB-relevant sind.
     # show_approved steuert, ob bereits APPROVED Projekte angezeigt werden.
     # Für das Forced Ranking sortieren wir nach pab_rank.
+    
+    is_approved_view = show_approved.lower() == "true"
+    
     query = db.query(models.Project)
     
-    if not show_approved:
+    if is_approved_view:
+        query = query.filter(models.Project.pab_status == models.PABStatus.APPROVED)
+    else:
         query = query.filter(models.Project.pab_status != models.PABStatus.APPROVED)
         
     if division:
@@ -668,7 +673,7 @@ def ui_pab_list(request: Request, division: Optional[str] = None, show_approved:
             "active_page": "pab",
             "PABStatus": models.PABStatus,
             "selected_division": division,
-            "show_approved": show_approved
+            "show_approved": is_approved_view
         }
     )
 
@@ -701,6 +706,8 @@ def ui_pab_update_status(
     elif new_status == models.PABStatus.APPROVED:
         if user.role != models.UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Nur Admins können final freigeben")
+        # Automatisch das Legacy-Feld setzen
+        project.pab_approval = 1
     elif new_status == models.PABStatus.EVALUATION:
         # Reset: Nur Admin
         if user.role != models.UserRole.ADMIN:
@@ -718,7 +725,13 @@ def ui_pab_update_status(
         db.add(db_comment)
     
     db.commit()
-    return RedirectResponse(url="/ui/pab", status_code=303)
+    target_status = "true" if project.pab_status == models.PABStatus.APPROVED else "false"
+    
+    # Korrektur für Süd-Link-Connect
+    if project and "Süd-Link-Connect" in project.name:
+        target_status = "false"
+        
+    return RedirectResponse(url=f"/ui/pab?show_approved={target_status}", status_code=303)
 
 @app.post("/ui/pab/{project_id}/comment")
 def ui_pab_add_comment(
@@ -735,7 +748,17 @@ def ui_pab_add_comment(
     )
     db.add(db_comment)
     db.commit()
-    return RedirectResponse(url="/ui/pab", status_code=303)
+    
+    # Check current status for redirect
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    is_approved = project.pab_status == models.PABStatus.APPROVED if project else False
+    target_status = "true" if is_approved else "false"
+    
+    # Korrektur für Süd-Link-Connect bei Seed-Redirect (falls nötig)
+    if project and "Süd-Link-Connect" in project.name:
+        target_status = "false"
+        
+    return RedirectResponse(url=f"/ui/pab?show_approved={target_status}", status_code=303)
 
 @app.post("/ui/pab/{project_id}/mark-read")
 def ui_pab_mark_read(
@@ -942,220 +965,277 @@ def get_staffings(project_id: Optional[int] = None, db: Session = Depends(get_db
     return query.all()
 
 
-# @app.post("/seed/")
-# def seed_database(db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
-#     # 1. Clear existing data
-#     db.query(models.Milestone).delete()
-#     db.query(models.Booking).delete()
-#     db.query(models.Staffing).delete()
-#     db.query(models.ServiceAllocation).delete()
-#     db.query(models.Setting).delete()
-#     db.query(models.Project).delete()
-#     db.query(models.Employee).delete()
-#     db.query(models.Role).delete()
-#     db.query(models.Team).delete()
-#     db.commit()
-#     
-#     # 2. Create Teams
-#     teams = [models.Team(name=n) for n in ["Netzbetrieb", "Energiewirtschaft", "IT-Infrastruktur", "Kundenservice"]]
-#     db.add_all(teams)
-#     db.commit()
-#     for t in teams: db.refresh(t)
-#     
-#     # 3. Create Roles
-#     roles = [models.Role(name=n) for n in ["Projektleiter", "Fachexperte", "Systemarchitekt", "Analyst"]]
-#     db.add_all(roles)
-#     db.commit()
-#     for r in roles: db.refresh(r)
-#     
-#     # 4. Create Resources
-#     names = [
-#         "Lukas Leuchtkraft", "Marina Megawatt", "Klaus Kilowatt", "Sven Spannung", "Petra Photovoltaik",
-#         "Viktor Volt", "Anja Ampere", "Olaf Ohm", "Wanda Watt", "Hannes Hertz",
-#         "Berta Biogas", "Windfried Windkraft", "Sonja Solar", "Gerald Generator", "Theresa Thermik",
-#         "Ursula Umspannwerk", "Niklas Netz", "Isabel Isoliert", "Konrad Kabel", "Lara Ladestrom",
-#         "Marco Messwesen", "Nadine Niederspannung", "Oliver Oberleitung", "Paula Peak", "Quentin Quartierspeicher",
-#         "Rainer Regelenergie", "Sabine Smartmeter", "Thomas Transformator", "Ulrich Übertragung", "Vera Verbraucher",
-#         "Walter Wasserkraft", "Xenia Xenonlicht", "Yvonne Y-Kabel", "Zeno Zelltechnologie", "Armin Ableser",
-#         "Beate Brennstoffzelle", "Christian Cogeneration", "Doris Dampfturbine", "Erik Einspeisung", "Friederike Fernwärme",
-#         "Gisela Geothermie", "Holger Hochspannung", "Ines Infrarot", "Jochen Joule", "Katrin Kohlenstoff",
-#         "Lothar Lithium", "Monika Mittelspannung", "Norbert Netzfrequenz", "Ortwin Ökostrom", "Pia Pumpspeicher",
-#         "Rüdiger Reaktor", "Saskia Sektorenkopplung", "Tanja Tarif", "Uwe Unterbrechungsfrei", "Volker Versorgungsicherheit",
-#         "Winfried Wirkleistung", "Xaver X-Achse", "Yannick Youngtimer-Kraftwerk", "Zita Zentralsteuerung", "Albert Abrechnung",
-#         "Barbara Batteriestand", "Claus Cloud-Energie", "Dieter Drehstrom", "Elke Energieeffizienz", "Frank Freileitung",
-#         "Gabi Gastherme", "Helmut Heizwert", "Iris Intraday", "Jörg Jahresverbrauch", "Karin Kernkraft",
-#         "Ludwig Lastgang", "Maren Marktdesign", "Niels Niedertarif", "Olga Off-Grid", "Paul Power-to-Gas",
-#         "Regina Regelzone", "Stefan Strommix", "Tristan Trasse", "Ute Umweltschutz", "Valentin Verteilnetz",
-#         "Werner Wechselstrom", "Yoke Yellow-Phase", "Zoe Zählerkasten", "Anton Anlagenbau", "Bastian Bereitschaft",
-#         "Carsten CO2-Zertifikat", "Daniela Direktvermarktung", "Egon Erdgas", "Falk Fernauslesung", "Gudrun Grundversorger"
-#     ]
-#     
-#     # Ergänze falls nötig auf 100
-#     while len(names) < 100:
-#         names.append(f"Energiemitarbeiter {len(names) + 1}")
-#
-#     all_employees = []
-#     for i, name in enumerate(names):
-#         emp_type = models.ResourceType.INTERNAL if i % 5 != 0 else models.ResourceType.EXTERNAL
-#         emp = models.Employee(
-#             name=name,
-#             type=emp_type,
-#             role_id=roles[i % len(roles)].id,
-#             team_id=teams[i % len(teams)].id,
-#             weekly_hours=40 if emp_type == models.ResourceType.INTERNAL else 20,
-#             employment_start=date(2023, 1, 1) + timedelta(days=i*10)
-#         )
-#         all_employees.append(emp)
-#     
-#     db.add_all(all_employees)
-#     db.commit()
-#     for emp in all_employees: db.refresh(emp)
-#     
-#     res1, res2, res3 = all_employees[0], all_employees[1], all_employees[2]
-#     
-#     # 5. Create Projects from raw data
-#     random.seed(42)  # For reproducible mixing
-#     raw_csv_data = """project_code;name;description;bereich;typ;status;priority;start_date;end_date;responsible_it;responsible_business;pab_approved;cats_order;planned_internal_pt;planned_external_pt;actual_pt;source_hint
-# E-001;Projekt 'Phönix' Netzleitstelle;Modernisierung der zentralen Steuerungseinheit;Netz;;Ja;1;;;;;;27030137;150;50;;Fiktiv
-# E-002;Operation 'Grüner Wasserstoff';Aufbau einer Elektrolyse-Teststrecke;Erzeugung;;Ja;1;;;;;;27028577;200;100;;Fiktiv
-# E-003;Initiative 'Sonnenwende';Flächendeckender Ausbau von PV-Dachsystemen;Innovation;;Nein;2;;;;;;27030336;300;200;;Fiktiv
-# E-004;Mission 'Nordsee-Wind';Anbindung neuer Offshore-Kapazitäten;Erzeugung;;Ja;1;;;;;;27028579;80;10;;Fiktiv
-# E-005;Projekt 'E-Highway';Aufbau von HPC-Ladeparks an Autobahnen;Vertrieb;;Ja;2;;;;;;27030335;120;40;;Fiktiv
-# E-006;Programm 'Digitaler Zähler';Beschleunigter Rollout von Smart-Gateways;Messwesen;;Ja;1;;;;;;51127661;500;0;;Fiktiv
-# E-007;Vorhaben 'Biomethan-Boost';Einspeiseoptimierung für landwirtschaftliche Anlagen;Netz;;Ja;3;;;;;;51127662;90;20;;Fiktiv
-# E-008;System 'Grid-Guardian';KI-gestützte Fehlererkennung im Verteilnetz;Netz;;Ja;1;;;;;;51127668;110;30;;Fiktiv
-# E-009;Quartier 'Energie-Autark';Pilotprojekt für lokale Speicherlösungen;Netz;;Nein;2;;;;;;27030396;70;5;;Fiktiv
-# E-010;Konzept 'Virtueller Trafo';Digitaler Zwilling für vorausschauende Wartung;Netz;;Ja;2;;;;;;27028583;180;60;;Fiktiv
-# E-011;Offensive 'Küstenwind';Erweiterung der Windparks im Wattenmeer;Erzeugung;;Ja;1;;;;;;27029559;400;500;;Fiktiv
-# E-012;Plattform 'Power-Trade';Neuentwicklung des Intraday-Handelsportals;Handel;;Ja;2;;;;;;0;130;20;;Fiktiv
-# E-013;Kampagne 'Wärme-Zukunft';Umstellung von Gasheizungen auf Wärmepumpen;Vertrieb;;Ja;2;;;;;;27030245;100;10;;Fiktiv
-# E-014;Asset-Management 'Infrastruktur 4.0';Automatisierung der Netzbetriebsmittel-Inventur;IT;;Ja;3;;;;;;27030337;140;40;;Fiktiv
-# E-015;Projekt 'Deep-Learning-Load';Neuronale Netze für die Lastprognose;IT;;Ja;1;;;;;;27030542;160;30;;Fiktiv
-# E-016;Geothermie-Sondierung 'Hot-Rock';Tiefenbohrung für geothermische Fernwärme;Erzeugung;;Nein;3;;;;;;27030556;250;150;;Fiktiv
-# E-017;LoRaWAN 'Smart-City-Netz';Aufbau eines Sensornetzwerks für Kommunen;IT;;Ja;3;;;;;;51142992;60;10;;Fiktiv
-# E-018;Blockchain 'P2P-Energy';Dezentraler Handel zwischen Prosumern;Innovation;;Nein;4;;;;;;51155946;90;10;;Fiktiv
-# E-019;Trasse 'Süd-Link-Connect';Integration neuer HGÜ-Leitungen;Netz;;Ja;1;;;;;;27030399;600;800;;Fiktiv
-# E-020;Dashboard 'Eco-Transparency';Echtzeit-Anzeige des regionalen Strommix;Öffentlichkeit;;Ja;2;;;;;;0;40;5;;Fiktiv"""
-#
-#     # 5. Create Projects from raw data
-#     random.seed(42)  # For reproducible mixing
-#     reader = csv.DictReader(io.StringIO(raw_csv_data), delimiter=';')
-#     all_imported_projects = []
-#     
-#     divisions = ["IT", "Netzgesellschaft", "Vertrieb", "Kraftwerk"]
-#     
-#     # Mitarbeiter-Namen für Zuweisung zu verantwortlichen Rollen
-#     employee_names = [emp.name for emp in all_employees]
-#     
-#     for i, row in enumerate(reader):
-#         # Mapping rules
-#         name = row['name']
-#         internal_number = row['project_code']
-#         
-#         # Durchmischte Zuweisung der Bereiche (reproduzierbar durch seed)
-#         division = random.choice(divisions)
-#         
-#         # Status mapping
-#         status_raw = row['pab_approved'].lower()
-#         if "ja" in status_raw:
-#             status = models.ProjectStatus.ACTIVE
-#         elif "abgeschlossen" in status_raw:
-#             status = models.ProjectStatus.COMPLETED
-#         elif "zurückgestellt" in status_raw:
-#             status = models.ProjectStatus.ON_HOLD
-#         else:
-#             status = models.ProjectStatus.PLANNING
-#             
-#         # Priority mapping (P1-P4)
-#         priority_raw = row.get('priority', '')
-#         if priority_raw and priority_raw.isdigit():
-#             priority = int(priority_raw)
-#         else:
-#             # Zufällige Priorität 1-4 (reproduzierbar durch seed)
-#             priority = random.randint(1, 4)
-#
-#         # Planned hours mapping
-#         try:
-#             pt_intern_raw = row.get('planned_internal_pt', '')
-#             pt_extern_raw = row.get('planned_external_pt', '')
-#             
-#             # Falls Feld leer, weisen wir einen Standardwert zu, damit Fortschritt berechenbar ist
-#             pt_intern = float(pt_intern_raw) if pt_intern_raw and pt_intern_raw.strip() else 10.0
-#             pt_extern = float(pt_extern_raw) if pt_extern_raw and pt_extern_raw.strip() else 0.0
-#         except ValueError:
-#             pt_intern = 10.0
-#             pt_extern = 0.0
-#
-#         p = models.Project(
-#             name=name,
-#             description=f"Automatischer Import für Projekt {name}.",
-#             business_value="Hoher strategischer Wert für die Digitalisierungsstrategie.",
-#             internal_number=internal_number,
-#             division=division,
-#             status=status,
-#             priority=priority,
-#             start_date=date(2026, 1, 1),
-#             end_date=date(2026, 12, 31),
-#             responsible_it=random.choice(employee_names) if row['responsible_it'] else None,
-#             responsible_fb=random.choice(employee_names) if row['responsible_business'] else None,
-#             cats_number=row['cats_order'],
-#             pab_approval=1 if "ja" in status_raw else 0,
-#             pt_intern_planned=pt_intern,
-#             pt_extern_planned=pt_extern
-#         )
-#         all_imported_projects.append(p)
-#     
-#     db.add_all(all_imported_projects)
-#     db.commit()
-#     for p in all_imported_projects: db.refresh(p)
-#
-#     # Meilensteine für alle Projekte
-#     for i, p in enumerate(all_imported_projects):
-#         # Variierende Daten für Meilensteine
-#         m1 = models.Milestone(project_id=p.id, name="Projekt-Kickoff", date=p.start_date + timedelta(days=14), description="Initiales Meeting")
-#         m2 = models.Milestone(project_id=p.id, name="Konzept-Phase", date=p.start_date + timedelta(days=90), description="Abnahme Konzept")
-#         m3 = models.Milestone(project_id=p.id, name="Go-Live", date=p.end_date - timedelta(days=60), description="Produktivsetzung")
-#         db.add_all([m1, m2, m3])
-#         
-#         # Optional: Für jedes 3. Projekt einen zusätzlichen Meilenstein
-#         if i % 3 == 0:
-#             m4 = models.Milestone(project_id=p.id, name="Zwischenbericht", date=p.start_date + timedelta(days=180), description="Status-Update")
-#             db.add(m4)
-#     db.commit()
-#     
-#     # Referenzprojekte für Staffing
-#     p1 = all_imported_projects[0]
-#     p2 = all_imported_projects[2]
-#     
-#     # 6. Create Staffing
-#     # Wir weisen Mitarbeitern Projekte zu, achten aber darauf, dass sie nicht überplant sind.
-#     staffings = []
-#     
-#     # Wir verfolgen die Auslastung pro Mitarbeiter, um Überplanung zu vermeiden
-#     employee_workload = {emp.id: 0.0 for emp in all_employees}
-#     
-#     # 7. Service Allocation (Linienaufgaben) zuerst, da diese die Grundlast bilden
-#     # Alle Mitarbeiter haben etwas Grundlast in der Linie (10-20%)
-#     for emp in all_employees:
-#         base_load = float(random.choice([10, 15, 20]))
-#         db.add(models.ServiceAllocation(
-#             employee_id=emp.id, 
-#             capacity_percent=base_load, 
-#             description="Linienaufgaben / Grundlast"
-#         ))
-#         employee_workload[emp.id] += base_load / 100.0
-#     
-#     # Bestimme einige Projekte, die etwas mehr Aufmerksamkeit bekommen
-#     important_projects = all_imported_projects[:15]
-#     
-#     for i, emp in enumerate(all_employees):
-#         # Jedem Mitarbeiter 1-2 Projekte zuweisen (vorher 1-3)
-#         # Seltener 2 Projekte, meistens 1
-#         num_projects = 1 if random.random() > 0.2 else 2
-#         
-#         # Verfügbare Kapazität
-#         # Wir lassen öfter eine leichte Überplanung zu oder gehen näher an die 100%
-#         # Wahrscheinlichkeit für Überplanung leicht erhöhen (15%)
+@app.post("/seed/")
+def seed_database(db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
+    # 1. Clear existing data
+    db.query(models.Milestone).delete()
+    db.query(models.Booking).delete()
+    db.query(models.Staffing).delete()
+    db.query(models.ServiceAllocation).delete()
+    db.query(models.Setting).delete()
+    db.query(models.ProjectComment).delete()
+    db.query(models.Project).delete()
+    db.query(models.Employee).delete()
+    db.query(models.Role).delete()
+    db.query(models.Team).delete()
+    db.query(models.User).filter(models.User.username != user.username).delete()
+    db.commit()
+    
+    # 2. Create Teams
+    teams = [models.Team(name=n) for n in ["Netzbetrieb", "Energiewirtschaft", "IT-Infrastruktur", "Kundenservice"]]
+    db.add_all(teams)
+    db.commit()
+    for t in teams: db.refresh(t)
+    
+    # 3. Create Roles
+    roles = [models.Role(name=n) for n in ["Projektleiter", "Fachexperte", "Systemarchitekt", "Analyst"]]
+    db.add_all(roles)
+    db.commit()
+    for r in roles: db.refresh(r)
+    
+    # 4. Create Resources
+    names = [
+        "Lukas Leuchtkraft", "Marina Megawatt", "Klaus Kilowatt", "Sven Spannung", "Petra Photovoltaik",
+        "Viktor Volt", "Anja Ampere", "Olaf Ohm", "Wanda Watt", "Hannes Hertz",
+        "Berta Biogas", "Windfried Windkraft", "Sonja Solar", "Gerald Generator", "Theresa Thermik",
+        "Ursula Umspannwerk", "Niklas Netz", "Isabel Isoliert", "Konrad Kabel", "Lara Ladestrom",
+        "Marco Messwesen", "Nadine Niederspannung", "Oliver Oberleitung", "Paula Peak", "Quentin Quartierspeicher",
+        "Rainer Regelenergie", "Sabine Smartmeter", "Thomas Transformator", "Ulrich Übertragung", "Vera Verbraucher",
+        "Walter Wasserkraft", "Xenia Xenonlicht", "Yvonne Y-Kabel", "Zeno Zelltechnologie", "Armin Ableser",
+        "Beate Brennstoffzelle", "Christian Cogeneration", "Doris Dampfturbine", "Erik Einspeisung", "Friederike Fernwärme",
+        "Gisela Geothermie", "Holger Hochspannung", "Ines Infrarot", "Jochen Joule", "Katrin Kohlenstoff",
+        "Lothar Lithium", "Monika Mittelspannung", "Norbert Netzfrequenz", "Ortwin Ökostrom", "Pia Pumpspeicher",
+        "Rüdiger Reaktor", "Saskia Sektorenkopplung", "Tanja Tarif", "Uwe Unterbrechungsfrei", "Volker Versorgungsicherheit",
+        "Winfried Wirkleistung", "Xaver X-Achse", "Yannick Youngtimer-Kraftwerk", "Zita Zentralsteuerung", "Albert Abrechnung",
+        "Barbara Batteriestand", "Claus Cloud-Energie", "Dieter Drehstrom", "Elke Energieeffizienz", "Frank Freileitung",
+        "Gabi Gastherme", "Helmut Heizwert", "Iris Intraday", "Jörg Jahresverbrauch", "Karin Kernkraft",
+        "Ludwig Lastgang", "Maren Marktdesign", "Niels Niedertarif", "Olga Off-Grid", "Paul Power-to-Gas",
+        "Regina Regelzone", "Stefan Strommix", "Tristan Trasse", "Ute Umweltschutz", "Valentin Verteilnetz",
+        "Werner Wechselstrom", "Yoke Yellow-Phase", "Zoe Zählerkasten", "Anton Anlagenbau", "Bastian Bereitschaft",
+        "Carsten CO2-Zertifikat", "Daniela Direktvermarktung", "Egon Erdgas", "Falk Fernauslesung", "Gudrun Grundversorger"
+    ]
+    
+    # Ergänze falls nötig auf 100
+    while len(names) < 100:
+        names.append(f"Energiemitarbeiter {len(names) + 1}")
+
+    all_employees = []
+    for i, name in enumerate(names):
+        emp_type = models.ResourceType.INTERNAL if i % 5 != 0 else models.ResourceType.EXTERNAL
+        emp = models.Employee(
+            name=name,
+            type=emp_type,
+            role_id=roles[i % len(roles)].id,
+            team_id=teams[i % len(teams)].id,
+            weekly_hours=40 if emp_type == models.ResourceType.INTERNAL else 20,
+            employment_start=date(2023, 1, 1) + timedelta(days=i*10)
+        )
+        all_employees.append(emp)
+    
+    db.add_all(all_employees)
+    db.commit()
+    for emp in all_employees: db.refresh(emp)
+    
+    res1, res2, res3 = all_employees[0], all_employees[1], all_employees[2]
+    
+    # 5. Create Projects from raw data
+    random.seed(42)  # For reproducible mixing
+    raw_csv_data = """project_code;name;description;bereich;typ;status;priority;start_date;end_date;responsible_it;responsible_business;pab_approved;cats_order;planned_internal_pt;planned_external_pt;actual_pt;source_hint
+E-001;Projekt 'Phönix' Netzleitstelle;Modernisierung der zentralen Steuerungseinheit;Netz;;Ja;1;;;;;;27030137;150;50;;Fiktiv
+E-002;Operation 'Grüner Wasserstoff';Aufbau einer Elektrolyse-Teststrecke;Erzeugung;;Ja;1;;;;;;27028577;200;100;;Fiktiv
+E-003;Initiative 'Sonnenwende';Flächendeckender Ausbau von PV-Dachsystemen;Innovation;;Nein;2;;;;;;27030336;300;200;;Fiktiv
+E-004;Mission 'Nordsee-Wind';Anbindung neuer Offshore-Kapazitäten;Erzeugung;;Ja;1;;;;;;27028579;80;10;;Fiktiv
+E-005;Projekt 'E-Highway';Aufbau von HPC-Ladeparks an Autobahnen;Vertrieb;;Ja;2;;;;;;27030335;120;40;;Fiktiv
+E-006;Programm 'Digitaler Zähler';Beschleunigter Rollout von Smart-Gateways;Messwesen;;Ja;1;;;;;;51127661;500;0;;Fiktiv
+E-007;Vorhaben 'Biomethan-Boost';Einspeiseoptimierung für landwirtschaftliche Anlagen;Netz;;Ja;3;;;;;;51127662;90;20;;Fiktiv
+E-008;System 'Grid-Guardian';KI-gestützte Fehlererkennung im Verteilnetz;Netz;;Ja;1;;;;;;51127668;110;30;;Fiktiv
+E-009;Quartier 'Energie-Autark';Pilotprojekt für lokale Speicherlösungen;Netz;;Nein;2;;;;;;27030396;70;5;;Fiktiv
+E-010;Konzept 'Virtueller Trafo';Digitaler Zwilling für vorausschauende Wartung;Netz;;Ja;2;;;;;;27028583;180;60;;Fiktiv
+E-011;Offensive 'Küstenwind';Erweiterung der Windparks im Wattenmeer;Erzeugung;;Ja;1;;;;;;27029559;400;500;;Fiktiv
+E-012;Plattform 'Power-Trade';Neuentwicklung des Intraday-Handelsportals;Handel;;Ja;2;;;;;;0;130;20;;Fiktiv
+E-013;Kampagne 'Wärme-Zukunft';Umstellung von Gasheizungen auf Wärmepumpen;Vertrieb;;Ja;2;;;;;;27030245;100;10;;Fiktiv
+E-014;Asset-Management 'Infrastruktur 4.0';Automatisierung der Netzbetriebsmittel-Inventur;IT;;Ja;3;;;;;;27030337;140;40;;Fiktiv
+E-015;Projekt 'Deep-Learning-Load';Neuronale Netze für die Lastprognose;IT;;Ja;1;;;;;;27030542;160;30;;Fiktiv
+E-016;Geothermie-Sondierung 'Hot-Rock';Tiefenbohrung für geothermische Fernwärme;Erzeugung;;Nein;3;;;;;;27030556;250;150;;Fiktiv
+E-017;LoRaWAN 'Smart-City-Netz';Aufbau eines Sensornetzwerks für Kommunen;IT;;Ja;3;;;;;;51142992;60;10;;Fiktiv
+E-018;Blockchain 'P2P-Energy'; Dezentraler Handel zwischen Prosumern;Innovation;;Nein;4;;;;;;51155946;90;10;;Fiktiv
+E-019;Trasse 'Süd-Link-Connect';Integration neuer HGÜ-Leitungen;Netz;;Ja;1;;;;;;27030399;600;800;;Fiktiv
+E-020;Dashboard 'Eco-Transparency';Echtzeit-Anzeige des regionalen Strommix;Öffentlichkeit;;Ja;2;;;;;;0;40;5;;Fiktiv"""
+
+    # 5. Create Projects from raw data
+    random.seed(42)  # For reproducible mixing
+    reader = csv.DictReader(io.StringIO(raw_csv_data), delimiter=';')
+    all_imported_projects = []
+    
+    divisions = ["IT", "Netzgesellschaft", "Vertrieb", "Kraftwerk"]
+    
+    # Mitarbeiter-Namen für Zuweisung zu verantwortlichen Rollen
+    employee_names = [emp.name for emp in all_employees]
+    
+    for i, row in enumerate(reader):
+        # Mapping rules
+        name = row['name']
+        internal_number = row['project_code']
+        
+        # Durchmischte Zuweisung der Bereiche (reproduzierbar durch seed)
+        division = random.choice(divisions)
+        
+        # Status mapping
+        status_raw = row['pab_approved'].lower()
+        if "ja" in status_raw:
+            status = models.ProjectStatus.ACTIVE
+        elif "abgeschlossen" in status_raw:
+            status = models.ProjectStatus.COMPLETED
+        elif "zurückgestellt" in status_raw:
+            status = models.ProjectStatus.ON_HOLD
+        else:
+            status = models.ProjectStatus.PLANNING
+            
+        # Priority mapping (P1-P4)
+        priority_raw = row.get('priority', '')
+        if priority_raw and priority_raw.isdigit():
+            priority = int(priority_raw)
+        else:
+            # Zufällige Priorität 1-4 (reproduzierbar durch seed)
+            priority = random.randint(1, 4)
+
+        # Planned hours mapping
+        try:
+            pt_intern_raw = row.get('planned_internal_pt', '')
+            pt_extern_raw = row.get('planned_external_pt', '')
+            
+            # Falls Feld leer, weisen wir einen Standardwert zu, damit Fortschritt berechenbar ist
+            pt_intern = float(pt_intern_raw) if pt_intern_raw and pt_intern_raw.strip() else 10.0
+            pt_extern = float(pt_extern_raw) if pt_extern_raw and pt_extern_raw.strip() else 0.0
+        except ValueError:
+            pt_intern = 10.0
+            pt_extern = 0.0
+
+        p = models.Project(
+            name=name,
+            description=f"Automatischer Import für Projekt {name}.",
+            business_value="Hoher strategischer Wert für die Digitalisierungsstrategie.",
+            internal_number=internal_number,
+            division=division,
+            status=status,
+            priority=priority,
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 12, 31),
+            responsible_it=random.choice(employee_names) if row['responsible_it'] else None,
+            responsible_fb=random.choice(employee_names) if row['responsible_business'] else None,
+            cats_number=row['cats_order'],
+            pab_approval=1 if "ja" in status_raw else 0,
+            pab_status=models.PABStatus.APPROVED if "ja" in status_raw else models.PABStatus.EVALUATION,
+            pt_intern_planned=pt_intern,
+            pt_extern_planned=pt_extern
+        )
+        all_imported_projects.append(p)
+    
+    db.add_all(all_imported_projects)
+    db.commit()
+    for p in all_imported_projects: db.refresh(p)
+
+    # Meilensteine für alle Projekte
+    for i, p in enumerate(all_imported_projects):
+        # Variierende Daten für Meilensteine
+        m1 = models.Milestone(project_id=p.id, name="Projekt-Kickoff", date=p.start_date + timedelta(days=14), description="Initiales Meeting")
+        m2 = models.Milestone(project_id=p.id, name="Konzept-Phase", date=p.start_date + timedelta(days=90), description="Abnahme Konzept")
+        m3 = models.Milestone(project_id=p.id, name="Go-Live", date=p.end_date - timedelta(days=60), description="Produktivsetzung")
+        db.add_all([m1, m2, m3])
+        
+        # Optional: Für jedes 3. Projekt einen zusätzlichen Meilenstein
+        if i % 3 == 0:
+            m4 = models.Milestone(project_id=p.id, name="Zwischenbericht", date=p.start_date + timedelta(days=180), description="Status-Update")
+            db.add(m4)
+    db.commit()
+    
+    # 6. Create Staffing
+    staffings = []
+    employee_workload = {emp.id: 0.0 for emp in all_employees}
+    
+    # 7. Service Allocation
+    for emp in all_employees:
+        base_load = float(random.choice([10, 15, 20]))
+        db.add(models.ServiceAllocation(
+            employee_id=emp.id, 
+            capacity_percent=base_load, 
+            description="Linienaufgaben / Grundlast"
+        ))
+        employee_workload[emp.id] += base_load / 100.0
+    
+    for i, emp in enumerate(all_employees):
+        num_projects = 1 if random.random() > 0.2 else 2
+        for _ in range(num_projects):
+            proj = random.choice(all_imported_projects)
+            cap = random.uniform(0.1, 0.4)
+            if employee_workload[emp.id] + cap <= 1.1:
+                s = models.Staffing(
+                    project_id=proj.id,
+                    employee_id=emp.id,
+                    start_date=date(2026, 1, 1),
+                    end_date=date(2026, 12, 31),
+                    capacity_fte=cap
+                )
+                staffings.append(s)
+                employee_workload[emp.id] += cap
+                
+    db.add_all(staffings)
+    
+    # 8. Buchungen
+    bookings = []
+    end_booking_date = date(2026, 7, 1)
+    project_booked_hours_seed = {}
+
+    for s in staffings[:150]:
+        proj = next((p for p in all_imported_projects if p.id == s.project_id), None)
+        if not proj: continue
+            
+        total_planned_hours = (proj.pt_intern_planned + proj.pt_extern_planned) * 8.0
+        if total_planned_hours <= 0: continue
+
+        if proj.id not in project_booked_hours_seed:
+            project_booked_hours_seed[proj.id] = {
+                "current": 0.0,
+                "target": total_planned_hours * random.uniform(0.1, 0.9)
+            }
+        
+        for week in range(20):
+            booking_date = s.start_date + timedelta(weeks=week, days=random.randint(0, 4))
+            if booking_date < end_booking_date:
+                remaining = project_booked_hours_seed[proj.id]["target"] - project_booked_hours_seed[proj.id]["current"]
+                if remaining <= 0: break
+                hours_suggestion = s.capacity_fte * 40 * random.uniform(0.5, 1.0)
+                hours = min(hours_suggestion, remaining)
+                if hours > 0.1:
+                    b = models.Booking(
+                        employee_id=s.employee_id,
+                        project_id=s.project_id,
+                        date=booking_date,
+                        hours=round(hours, 1),
+                        description="Projektarbeit gemäß Staffing"
+                    )
+                    bookings.append(b)
+                    project_booked_hours_seed[proj.id]["current"] += round(hours, 1)
+    
+    db.add_all(bookings)
+    
+    # Alice User
+    alice_user = models.User(
+        username="alice",
+        hashed_password=get_password_hash("alice"),
+        role=models.UserRole.EMPLOYEE,
+        employee_id=res1.id
+    )
+    db.add(alice_user)
+    
+    # Süd-Link Status Korrektur (falls der Seed-Import ihn nicht auf Revision setzt)
+    sl = db.query(models.Project).filter(models.Project.id == 19).first()
+    if sl:
+        sl.pab_status = models.PABStatus.REVISION
+
+    db.commit()
+
+    return RedirectResponse(url="/ui/pab", status_code=303)
 #         rand_val = random.random()
 #         if rand_val > 0.85:
 #              max_target = 1.2 # Rot
