@@ -48,6 +48,7 @@
                     <th style="width: 40px;"></th>
                     {% endif %}
                     <th data-label="Projekt">Projekt / Details</th>
+                    <th data-label="Steuerung" style="width: 100px; text-align: center;">Steuerung</th>
                     <th data-label="Prio" style="width: 60px;">Prio</th>
                     <th data-label="Status" style="width: 120px;">Status</th>
                     <th data-label="Verantwortlich" class="hide-on-tablet">Verantwortlich</th>
@@ -74,11 +75,11 @@
                                 {% endif %}
                                 {% if p.economic_score is not none %}
                                     {% if p.economic_score < 3 %}
-                                        <span class="badge" style="background-color: #fee2e2; color: #991b1b; font-size: 0.7rem; padding: 1px 5px;" title="Kritische Wirtschaftlichkeit">Score: {{ p.economic_score }}!</span>
+                                        <span class="badge" style="background-color: #fee2e2; color: #991b1b; font-size: 0.7rem; padding: 1px 5px; white-space: nowrap;" data-tooltip="Kritische Wirtschaftlichkeit">Score: {{ p.economic_score }}!</span>
                                     {% elif p.economic_score < 6 %}
-                                        <span class="badge" style="background-color: #fef3c7; color: #92400e; font-size: 0.7rem; padding: 1px 5px;">Score: {{ p.economic_score }}</span>
+                                        <span class="badge" style="background-color: #fef3c7; color: #92400e; font-size: 0.7rem; padding: 1px 5px; white-space: nowrap;">Score: {{ p.economic_score }}</span>
                                     {% else %}
-                                        <span class="badge" style="background-color: #d1fae5; color: #065f46; font-size: 0.7rem; padding: 1px 5px;">Score: {{ p.economic_score }}</span>
+                                        <span class="badge" style="background-color: #d1fae5; color: #065f46; font-size: 0.7rem; padding: 1px 5px; white-space: nowrap;">Score: {{ p.economic_score }}</span>
                                     {% endif %}
                                 {% endif %}
                                 {% if p.division == 'IT' %}
@@ -92,6 +93,22 @@
                                 {% else %}
                                     <span class="badge badge-default">{{ p.division if p.division else '-' }}</span>
                                 {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="Steuerung" style="text-align: center;">
+                        <div class="steering-container" data-tooltip="Status-Update am: {{ p.steering_last_update if p.steering_last_update else 'nie' }}" data-tooltip-pos="left">
+                            <div class="steering-group" data-tooltip="Zeitplan: {{ 'OK' if p.steering_time.value == 'GREEN' else 'Verzögerung' if p.steering_time.value == 'YELLOW' else 'Kritisch' if p.steering_time.value == 'RED' else 'Keine Info' }}">
+                                <span class="steering-dot {{ p.steering_time.value.lower() }}"></span>
+                                <span class="steering-label">Z</span>
+                            </div>
+                            <div class="steering-group" data-tooltip="Budget: {{ 'OK' if p.steering_budget.value == 'GREEN' else 'Abweichung' if p.steering_budget.value == 'YELLOW' else 'Kritisch' if p.steering_budget.value == 'RED' else 'Keine Info' }}">
+                                <span class="steering-dot {{ p.steering_budget.value.lower() }}"></span>
+                                <span class="steering-label">B</span>
+                            </div>
+                            <div class="steering-group" data-tooltip="Qualität: {{ 'OK' if p.steering_quality.value == 'GREEN' else 'Mängel' if p.steering_quality.value == 'YELLOW' else 'Kritisch' if p.steering_quality.value == 'RED' else 'Keine Info' }}">
+                                <span class="steering-dot {{ p.steering_quality.value.lower() }}"></span>
+                                <span class="steering-label">Q</span>
                             </div>
                         </div>
                     </td>
@@ -155,7 +172,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             {% if p.progress > 100 %}
                             <small style="font-weight: 600; color: var(--danger);">
-                                {{ p.progress }}% <span title="Überbucht!">⚠️</span>
+                                {{ p.progress }}% <span data-tooltip="Überbucht!">⚠️</span>
                             </small>
                             {% else %}
                             <small style="font-weight: 600; color: var(--primary-color);">{{ p.progress }}%</small>

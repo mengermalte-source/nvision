@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="steering-board-header" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end;">
+    <div>
+        <p style="color: var(--text-muted); margin-top: 0.5rem;">Übersicht aller aktiven Projekte und deren aktueller Lenkungs-Status.</p>
+    </div>
+    
+    <div class="filters card" style="margin-bottom: 0; padding: 1rem; display: flex; gap: 1rem; align-items: center;">
+        <div class="filter-group">
+            <label for="divisionFilter" style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Bereich</label>
+            <select id="divisionFilter" onchange="window.location.href='/ui/steering?division=' + this.value" style="padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color); background: white; min-width: 150px;">
+                <option value="">Alle Bereiche</option>
+                {% for d in divisions %}
+                <option value="{{ d }}" {% if selected_division == d %}selected{% endif %}>{{ d }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+             <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Legende</label>
+             <div style="display: flex; gap: 0.75rem; align-items: center; font-size: 0.85rem;">
+                 <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot green" style="width: 12px; height: 12px;"></span> OK</span>
+                 <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot yellow" style="width: 12px; height: 12px;"></span> Achtung</span>
+                 <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot red" style="width: 12px; height: 12px;"></span> Kritisch</span>
+             </div>
+        </div>
+    </div>
+</div>
+
+<div class="steering-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)); gap: 1.5rem;">
+    {% for p in projects %}
+    <div class="card steering-card" style="display: flex; flex-direction: column; transition: transform 0.2s;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+            <div>
+                <h3 style="margin: 0; font-size: 1.1rem;"><a href="/ui/projects/{{ p.id }}" style="text-decoration: none; color: inherit;">{{ p.name }}</a></h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    {{ p.division }} | Prio {{ p.priority }} | Ende: {{ p.end_date }}
+                </div>
+            </div>
+            <div class="steering-status-main" style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-color); padding: 0.4rem 0.75rem; border-radius: 20px; font-weight: 600; font-size: 0.85rem; white-space: nowrap;">
+                <span class="steering-dot {{ p.steering_status.value.lower() }}" style="width: 14px; height: 14px;"></span>
+                {{ 'OK' if p.steering_status.value == 'GREEN' else 'ACHTUNG' if p.steering_status.value == 'YELLOW' else 'KRITISCH' if p.steering_status.value == 'RED' else 'KEIN STATUS' }}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.25rem; padding: 0.75rem; background: rgba(0,0,0,0.02); border-radius: 8px;">
+            <div style="text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.3rem;">Zeit</div>
+                <span class="steering-dot {{ p.steering_time.value.lower() }}" style="width: 18px; height: 18px; margin: 0 auto;"></span>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.3rem;">Budget</div>
+                <span class="steering-dot {{ p.steering_budget.value.lower() }}" style="width: 18px; height: 18px; margin: 0 auto;"></span>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.3rem;">Qualität</div>
+                <span class="steering-dot {{ p.steering_quality.value.lower() }}" style="width: 18px; height: 18px; margin: 0 auto;"></span>
+            </div>
+        </div>
+
+        <div style="flex: 1; margin-bottom: 1rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem;">Steering Mitglieder:</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem;">
+                {% for m in p.steering_members %}
+                <div class="badge" style="background: var(--primary-light); color: var(--primary-dark); display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                    {{ m.name }}
+                    <form action="/ui/steering/unassign" method="post" style="display: inline;">
+                        <input type="hidden" name="project_id" value="{{ p.id }}">
+                        <input type="hidden" name="employee_id" value="{{ m.id }}">
+                        <button type="submit" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 0; font-weight: bold; font-size: 1rem; line-height: 1;">&times;</button>
+                    </form>
+                </div>
+                {% endfor %}
+                <button onclick="document.getElementById('assignModal{{ p.id }}').style.display='flex'" class="btn btn-small" style="padding: 0.1rem 0.4rem; font-size: 0.75rem;">+ Hinzufügen</button>
+            </div>
+
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem;">Aktueller Statusbericht:</div>
+            <div style="font-size: 0.9rem; line-height: 1.4; color: var(--text-dark); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap;">{{ p.steering_details if p.steering_details else 'Kein Bericht vorhanden.' }}</div>
+        </div>
+
+        <!-- Assign Modal for this project -->
+        <div class="modal-overlay" id="assignModal{{ p.id }}" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+            <div class="card" style="width: 400px; margin-bottom: 0;">
+                <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="margin: 0;">Mitglied hinzufügen</h3>
+                    <button onclick="document.getElementById('assignModal{{ p.id }}').style.display='none'" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                </div>
+                <form action="/ui/steering/assign" method="post">
+                    <input type="hidden" name="project_id" value="{{ p.id }}">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="employeeSelect{{ p.id }}" style="display: block; margin-bottom: 0.5rem;">Mitarbeiter auswählen</label>
+                        <select id="employeeSelect{{ p.id }}" name="employee_id" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color);">
+                            {% for e in employees %}
+                                {% if e not in p.steering_members %}
+                                <option value="{{ e.id }}">{{ e.name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                        <button type="button" onclick="document.getElementById('assignModal{{ p.id }}').style.display='none'" class="btn">Abbrechen</button>
+                        <button type="submit" class="btn btn-primary">Hinzufügen</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 0.75rem; margin-top: auto;">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">
+                Update: {{ p.steering_last_update if p.steering_last_update else 'nie' }}
+            </div>
+            <a href="/ui/projects/{{ p.id }}" class="btn btn-small" style="padding: 0.25rem 0.75rem;">Details &rarr;</a>
+        </div>
+    </div>
+    {% else %}
+    <div class="card" style="grid-column: 1 / -1; padding: 4rem; text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.2;">&EmptySmallSquare;</div>
+        <h3>Keine Projekte gefunden</h3>
+        <p style="color: var(--text-muted);">Es wurden keine aktiven Projekte für die gewählten Filter gefunden.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    .steering-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }
+</style>
+{% endblock %}

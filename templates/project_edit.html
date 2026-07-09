@@ -108,6 +108,79 @@
                 <input type="checkbox" name="pab_approval" id="pab_approval" {% if project.pab_approval %}checked{% endif %} style="width: 18px; height: 18px; cursor: pointer;">
                 <label for="pab_approval" style="cursor: pointer; font-weight: 600; margin-bottom: 0;">Freigabe PAB?</label>
             </div>
+
+            <!-- Projektsteuerung -->
+            <div style="grid-column: 1 / -1; margin-top: 1rem; padding: 1rem; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--primary-dark);">Projektsteuerung</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label>Gesamt-Status</label>
+                        <select name="steering_status" style="font-weight: bold;">
+                            <option value="NONE" {% if project.steering_status.value == 'NONE' %}selected{% endif %}>⚪ Kein Status</option>
+                            <option value="GREEN" {% if project.steering_status.value == 'GREEN' %}selected{% endif %} style="color: #22c55e;">🟢 GRÜN</option>
+                            <option value="YELLOW" {% if project.steering_status.value == 'YELLOW' %}selected{% endif %} style="color: #eab308;">🟡 GELB</option>
+                            <option value="RED" {% if project.steering_status.value == 'RED' %}selected{% endif %} style="color: #ef4444;">🔴 ROT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Zeit-Status</label>
+                        <select name="steering_time" style="font-weight: bold;">
+                            <option value="NONE" {% if project.steering_time.value == 'NONE' %}selected{% endif %}>⚪ Kein Status</option>
+                            <option value="GREEN" {% if project.steering_time.value == 'GREEN' %}selected{% endif %} style="color: #22c55e;">🟢 GRÜN</option>
+                            <option value="YELLOW" {% if project.steering_time.value == 'YELLOW' %}selected{% endif %} style="color: #eab308;">🟡 GELB</option>
+                            <option value="RED" {% if project.steering_time.value == 'RED' %}selected{% endif %} style="color: #ef4444;">🔴 ROT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Budget-Status</label>
+                        <select name="steering_budget" style="font-weight: bold;">
+                            <option value="NONE" {% if project.steering_budget.value == 'NONE' %}selected{% endif %}>⚪ Kein Status</option>
+                            <option value="GREEN" {% if project.steering_budget.value == 'GREEN' %}selected{% endif %} style="color: #22c55e;">🟢 GRÜN</option>
+                            <option value="YELLOW" {% if project.steering_budget.value == 'YELLOW' %}selected{% endif %} style="color: #eab308;">🟡 GELB</option>
+                            <option value="RED" {% if project.steering_budget.value == 'RED' %}selected{% endif %} style="color: #ef4444;">🔴 ROT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Qualitäts-Status</label>
+                        <select name="steering_quality" style="font-weight: bold;">
+                            <option value="NONE" {% if project.steering_quality.value == 'NONE' %}selected{% endif %}>⚪ Kein Status</option>
+                            <option value="GREEN" {% if project.steering_quality.value == 'GREEN' %}selected{% endif %} style="color: #22c55e;">🟢 GRÜN</option>
+                            <option value="YELLOW" {% if project.steering_quality.value == 'YELLOW' %}selected{% endif %} style="color: #eab308;">🟡 GELB</option>
+                            <option value="RED" {% if project.steering_quality.value == 'RED' %}selected{% endif %} style="color: #ef4444;">🔴 ROT</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Aktueller Statusbericht / Steuerungstext</label>
+                    <textarea name="steering_details" style="height: 100px;" placeholder="Zusammenfassung für den Lenkungsausschuss...">{{ project.steering_details if project.steering_details else '' }}</textarea>
+                    <small style="color: var(--text-muted); display: block; margin-top: 0.25rem;">Letztes Update: {{ project.steering_last_update if project.steering_last_update else 'nie' }}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budgetverwaltung -->
+        <div style="grid-column: 1 / -1; margin-top: 1rem; padding: 1rem; background-color: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #0369a1;">Budgetverwaltung</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                <div class="form-group">
+                    <label>Budget Invest (Gesamt)</label>
+                    <input type="number" name="budget_total_invest" step="1000" value="{{ project.budget_total_invest }}">
+                </div>
+                <div class="form-group">
+                    <label>Budget Unterhalt (Gesamt)</label>
+                    <input type="number" name="budget_total_unterhalt" step="1000" value="{{ project.budget_total_unterhalt }}">
+                </div>
+                <div class="form-group">
+                    <label>Budget Invest (Aktuelles Jahr)</label>
+                    <input type="number" name="budget_current_year_invest" step="1000" value="{{ budget_current_invest if budget_current_invest is defined else 0 }}">
+                </div>
+                <div class="form-group">
+                    <label>Budget Unterhalt (Aktuelles Jahr)</label>
+                    <input type="number" name="budget_current_year_unterhalt" step="1000" value="{{ budget_current_unterhalt if budget_current_unterhalt is defined else 0 }}">
+                </div>
+            </div>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; margin-top: 1rem; border-top: 1px solid var(--border-color);">

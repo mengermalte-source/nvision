@@ -243,6 +243,32 @@ def ui_heatmap(request: Request, year: Optional[int] = None, team_id: Optional[i
         }
     )
 
+@app.get("/ui/steering", response_class=HTMLResponse)
+def ui_steering_board(request: Request, division: Optional[str] = None, db: Session = Depends(get_db)):
+    if not request.state.user:
+        return RedirectResponse(url="/login")
+    
+    query = db.query(models.Project).filter(models.Project.status != models.ProjectStatus.COMPLETED)
+    
+    if division:
+        query = query.filter(models.Project.division == division)
+        
+    projects = query.order_by(models.Project.priority.asc(), models.Project.end_date.asc()).all()
+    
+    divisions = [d[0] for d in db.query(models.Project.division).distinct().all() if d[0]]
+    employees = db.query(models.Employee).order_by(models.Employee.name).all()
+    
+    return templates.TemplateResponse(
+        request=request, name="steering_board.html", context={
+            "projects": projects,
+            "divisions": sorted(divisions),
+            "employees": employees,
+            "selected_division": division,
+            "active_page": "steering",
+            "title": "Steering Board"
+        }
+    )
+
 @app.get("/api/heatmap/detail/{employee_id}/{year}/{month}", response_model=schemas.CapacityDetail)
 def get_capacity_detail(employee_id: int, year: int, month: int, db: Session = Depends(get_db), user: models.User = Depends(login_required)):
     employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
@@ -289,6 +315,30 @@ def get_capacity_detail(employee_id: int, year: int, month: int, db: Session = D
         staffings=staffing_details,
         free_capacity_fte=total_cap - service_cap - staffed_cap
     )
+
+@app.post("/ui/steering/assign")
+def ui_steering_assign(project_id: int = Form(...), employee_id: int = Form(...), db: Session = Depends(get_db), user: models.User = Depends(login_required)):
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
+    
+    if project and employee:
+        if employee not in project.steering_members:
+            project.steering_members.append(employee)
+            db.commit()
+            
+    return RedirectResponse(url="/ui/steering", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.post("/ui/steering/unassign")
+def ui_steering_unassign(project_id: int = Form(...), employee_id: int = Form(...), db: Session = Depends(get_db), user: models.User = Depends(login_required)):
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
+    
+    if project and employee:
+        if employee in project.steering_members:
+            project.steering_members.remove(employee)
+            db.commit()
+            
+    return RedirectResponse(url="/ui/steering", status_code=status.HTTP_303_SEE_OTHER)
 
 def get_annual_heatmap(year: int, db: Session, team_id: Optional[int] = None):
     query = db.query(models.Employee)
@@ -458,6 +508,15 @@ def ui_add_project(
     pt_extern_planned: float = Form(0.0),
     economic_score: float = Form(0.0),
     business_case: Optional[str] = Form(None),
+    steering_status: models.SteeringStatus = Form(models.SteeringStatus.NONE),
+    steering_time: models.SteeringStatus = Form(models.SteeringStatus.NONE),
+    steering_budget: models.SteeringStatus = Form(models.SteeringStatus.NONE),
+    steering_quality: models.SteeringStatus = Form(models.SteeringStatus.NONE),
+    steering_details: Optional[str] = Form(None),
+    budget_total_invest: float = Form(0.0),
+    budget_total_unterhalt: float = Form(0.0),
+    budget_current_year_invest: float = Form(0.0),
+    budget_current_year_unterhalt: float = Form(0.0),
     db: Session = Depends(get_db),
     user: models.User = Depends(admin_required)
 ):
@@ -479,9 +538,38 @@ def ui_add_project(
         pt_intern_planned=pt_intern_planned,
         pt_extern_planned=pt_extern_planned,
         economic_score=economic_score,
-        business_case=business_case
+        business_case=business_case,
+        steering_status=steering_status,
+        steering_time=steering_time,
+        steering_budget=steering_budget,
+        steering_quality=steering_quality,
+        steering_details=steering_details,
+        steering_last_update=date.today() if any(s != models.SteeringStatus.NONE for s in [steering_status, steering_time, steering_budget, steering_quality]) else None,
+        budget_total_invest=budget_total_invest,
+        budget_total_unterhalt=budget_total_unterhalt
     )
     db.add(db_project)
+    db.flush()
+
+    current_year = date.today().year
+    if budget_current_year_invest > 0:
+        db_budget_invest = models.ProjectBudget(
+            project_id=db_project.id,
+            year=current_year,
+            category=models.BudgetCategory.INVEST,
+            amount=budget_current_year_invest
+        )
+        db.add(db_budget_invest)
+    
+    if budget_current_year_unterhalt > 0:
+        db_budget_unterhalt = models.ProjectBudget(
+            project_id=db_project.id,
+            year=current_year,
+            category=models.BudgetCategory.UNTERHALT,
+            amount=budget_current_year_unterhalt
+        )
+        db.add(db_budget_unterhalt)
+
     db.commit()
     return RedirectResponse(url="/ui/projects", status_code=303)
 
@@ -518,6 +606,15 @@ def ui_edit_project(
     pt_extern_planned: float = Form(0.0),
     economic_score: float = Form(0.0),
     business_case: Optional[str] = Form(None),
+    steering_status: models.SteeringStatus = Form(models.SteeringStatus.NONE),
+    steering_time: models.SteeringStatus = Form(models.SteeringStatus.NONE),
+    steering_budget: models.SteeringStatus = Form(models.SteeringStatus.NONE),
+    steering_quality: models.SteeringStatus = Form(models.SteeringStatus.NONE),
+    steering_details: Optional[str] = Form(None),
+    budget_total_invest: float = Form(0.0),
+    budget_total_unterhalt: float = Form(0.0),
+    budget_current_year_invest: float = Form(0.0),
+    budget_current_year_unterhalt: float = Form(0.0),
     db: Session = Depends(get_db),
     user: models.User = Depends(admin_required)
 ):
@@ -543,7 +640,57 @@ def ui_edit_project(
     project.pt_extern_planned = pt_extern_planned
     project.economic_score = economic_score
     project.business_case = business_case
+    project.budget_total_invest = budget_total_invest
+    project.budget_total_unterhalt = budget_total_unterhalt
+
+    # Jährliche Budgets aktualisieren (Aktuelles Jahr)
+    current_year = date.today().year
     
+    # Invest
+    budget_invest = db.query(models.ProjectBudget).filter(
+        models.ProjectBudget.project_id == project_id,
+        models.ProjectBudget.year == current_year,
+        models.ProjectBudget.category == models.BudgetCategory.INVEST
+    ).first()
+    if budget_invest:
+        budget_invest.amount = budget_current_year_invest
+    elif budget_current_year_invest > 0:
+        db.add(models.ProjectBudget(
+            project_id=project_id,
+            year=current_year,
+            category=models.BudgetCategory.INVEST,
+            amount=budget_current_year_invest
+        ))
+
+    # Unterhalt
+    budget_unterhalt = db.query(models.ProjectBudget).filter(
+        models.ProjectBudget.project_id == project_id,
+        models.ProjectBudget.year == current_year,
+        models.ProjectBudget.category == models.BudgetCategory.UNTERHALT
+    ).first()
+    if budget_unterhalt:
+        budget_unterhalt.amount = budget_current_year_unterhalt
+    elif budget_current_year_unterhalt > 0:
+        db.add(models.ProjectBudget(
+            project_id=project_id,
+            year=current_year,
+            category=models.BudgetCategory.UNTERHALT,
+            amount=budget_current_year_unterhalt
+        ))
+
+    # Steuerungs-Logik
+    if (project.steering_status != steering_status or 
+        project.steering_time != steering_time or
+        project.steering_budget != steering_budget or
+        project.steering_quality != steering_quality or
+        project.steering_details != steering_details):
+        project.steering_status = steering_status
+        project.steering_time = steering_time
+        project.steering_budget = steering_budget
+        project.steering_quality = steering_quality
+        project.steering_details = steering_details
+        project.steering_last_update = date.today()
+
     db.commit()
     return RedirectResponse(url="/ui/projects", status_code=303)
 
@@ -586,11 +733,25 @@ def ui_project_detail(request: Request, project_id: int, db: Session = Depends(g
     progress = calculate_project_progress(project, db)
     # Ensure progress is a float
     progress = float(progress)
+
+    # Budget-Daten aggregieren
+    current_year = date.today().year
+    budget_current_invest = 0.0
+    budget_current_unterhalt = 0.0
     
+    for b in project.budgets:
+        if b.year == current_year:
+            if b.category == models.BudgetCategory.INVEST:
+                budget_current_invest = b.amount
+            elif b.category == models.BudgetCategory.UNTERHALT:
+                budget_current_unterhalt = b.amount
+
     return templates.TemplateResponse(
         request=request, name="project_detail.html", context={
             "project": project,
             "progress": progress,
+            "budget_current_invest": budget_current_invest,
+            "budget_current_unterhalt": budget_current_unterhalt,
             "active_page": "projects"
         }
     )

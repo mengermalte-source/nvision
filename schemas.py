@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import date, datetime
 from typing import Optional, List
-from models import ResourceType, ProjectStatus, UserRole, PABStatus
+from models import ResourceType, ProjectStatus, UserRole, PABStatus, SteeringStatus, BudgetCategory
 
 class MilestoneBase(BaseModel):
     name: str
@@ -42,6 +42,19 @@ class ProjectComment(ProjectCommentBase):
     author_id: int
     created_at: datetime
     author: User
+    model_config = ConfigDict(from_attributes=True)
+
+class ProjectBudgetBase(BaseModel):
+    year: int
+    category: BudgetCategory
+    amount: float
+
+class ProjectBudgetCreate(ProjectBudgetBase):
+    project_id: int
+
+class ProjectBudget(ProjectBudgetBase):
+    id: int
+    project_id: int
     model_config = ConfigDict(from_attributes=True)
 
 class BookingBase(BaseModel):
@@ -118,6 +131,14 @@ class ProjectBase(BaseModel):
     pt_extern_planned: float = 0.0
     economic_score: float = 0.0
     business_case: Optional[str] = None
+    steering_status: SteeringStatus = SteeringStatus.NONE
+    steering_time: SteeringStatus = SteeringStatus.NONE
+    steering_budget: SteeringStatus = SteeringStatus.NONE
+    steering_quality: SteeringStatus = SteeringStatus.NONE
+    steering_details: Optional[str] = None
+    steering_last_update: Optional[date] = None
+    budget_total_invest: float = 0.0
+    budget_total_unterhalt: float = 0.0
 
 class ProjectCreate(ProjectBase):
     pass
@@ -127,6 +148,7 @@ class Project(ProjectBase):
     progress: Optional[float] = 0.0 # Calculated field
     milestones: List[Milestone] = []
     pab_comments: List[ProjectComment] = []
+    budgets: List[ProjectBudget] = []
     model_config = ConfigDict(from_attributes=True)
 
 class StaffingBase(BaseModel):

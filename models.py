@@ -36,6 +36,16 @@ class PABStatus(enum.Enum):
     CONFIRMED = "confirmed"
     APPROVED = "approved"
 
+class SteeringStatus(enum.Enum):
+    GREEN = "GREEN"
+    YELLOW = "YELLOW"
+    RED = "RED"
+    NONE = "NONE"
+
+class BudgetCategory(enum.Enum):
+    INVEST = "invest"
+    UNTERHALT = "unterhalt"
+
 class Team(Base):
     __tablename__ = "teams"
     id = Column(Integer, primary_key=True, index=True)
@@ -101,10 +111,39 @@ class Project(Base):
     economic_score = Column(Float, default=0.0) # 0.0 to 10.0
     business_case = Column(String, nullable=True)
 
+    # Steuerungs-Felder
+    steering_status = Column(Enum(SteeringStatus), default=SteeringStatus.NONE)
+    steering_time = Column(Enum(SteeringStatus), default=SteeringStatus.NONE)
+    steering_budget = Column(Enum(SteeringStatus), default=SteeringStatus.NONE)
+    steering_quality = Column(Enum(SteeringStatus), default=SteeringStatus.NONE)
+    steering_details = Column(String, nullable=True)
+    steering_last_update = Column(Date, nullable=True)
+
+    # Budget-Felder (Gesamtlaufzeit)
+    budget_total_invest = Column(Float, default=0.0)
+    budget_total_unterhalt = Column(Float, default=0.0)
+
     staffings = relationship("Staffing", back_populates="project")
     bookings = relationship("Booking", back_populates="project")
     milestones = relationship("Milestone", back_populates="project", cascade="all, delete-orphan")
     pab_comments = relationship("ProjectComment", back_populates="project", cascade="all, delete-orphan")
+    budgets = relationship("ProjectBudget", back_populates="project", cascade="all, delete-orphan")
+    steering_members = relationship("Employee", secondary="project_steering_members")
+
+class ProjectSteeringMember(Base):
+    __tablename__ = "project_steering_members"
+    project_id = Column(Integer, ForeignKey("projects.id"), primary_key=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"), primary_key=True)
+
+class ProjectBudget(Base):
+    __tablename__ = "project_budgets"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"))
+    year = Column(Integer, index=True)
+    category = Column(Enum(BudgetCategory))
+    amount = Column(Float, default=0.0)
+
+    project = relationship("Project", back_populates="budgets")
 
 class ProjectComment(Base):
     __tablename__ = "project_comments"

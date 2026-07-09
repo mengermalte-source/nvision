@@ -432,6 +432,7 @@ body.sidebar-expanded .main-wrapper {
     font-size: 0.75rem;
     font-weight: 600;
     transition: background-color 0.3s ease, color 0.3s ease;
+    white-space: nowrap;
 }
 
 .badge-it { background-color: #dbeafe; color: #1e40af; }
@@ -806,7 +807,149 @@ body.sidebar-expanded .main-wrapper {
     border-color: #fee2e2;
 }
 
-/* Legend */
+/* Steering Traffic Light Colors */
+.steering-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    position: relative;
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.steering-dot:hover {
+    transform: scale(1.2);
+    filter: brightness(1.1);
+    cursor: pointer;
+}
+
+.steering-dot.green {
+    background: radial-gradient(circle at 30% 30%, #4ade80, #166534);
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+}
+
+.steering-dot.yellow {
+    background: radial-gradient(circle at 30% 30%, #fde047, #a16207);
+    box-shadow: 0 0 8px rgba(234, 179, 8, 0.4);
+}
+
+.steering-dot.red {
+    background: radial-gradient(circle at 30% 30%, #f87171, #991b1b);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.steering-dot.none {
+    background: radial-gradient(circle at 30% 30%, #f1f5f9, #94a3b8);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* Modern Tooltip System */
+[data-tooltip] {
+    position: relative;
+    cursor: pointer;
+}
+
+[data-tooltip]:before,
+[data-tooltip]:after {
+    position: absolute;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+}
+
+/* Tooltip Body */
+[data-tooltip]:before {
+    content: attr(data-tooltip);
+    background-color: #1e293b;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%) translateY(5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Tooltip Arrow */
+[data-tooltip]:after {
+    content: "";
+    border-width: 5px;
+    border-style: solid;
+    border-color: #1e293b transparent transparent transparent;
+    bottom: calc(125% - 10px);
+    left: 50%;
+    transform: translateX(-50%) translateY(5px);
+}
+
+[data-tooltip]:hover:before,
+[data-tooltip]:hover:after {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Position Bottom */
+[data-tooltip-pos="bottom"]:before {
+    bottom: auto;
+    top: 125%;
+    transform: translateX(-50%) translateY(-5px);
+}
+[data-tooltip-pos="bottom"]:after {
+    bottom: auto;
+    top: calc(125% - 10px);
+    border-color: transparent transparent #1e293b transparent;
+    transform: translateX(-50%) translateY(-5px);
+}
+[data-tooltip-pos="bottom"]:hover:before,
+[data-tooltip-pos="bottom"]:hover:after {
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Position Left */
+[data-tooltip-pos="left"]:before {
+    bottom: 50%;
+    right: 125%;
+    left: auto;
+    transform: translateX(5px) translateY(50%);
+}
+[data-tooltip-pos="left"]:after {
+    bottom: 50%;
+    right: calc(125% - 10px);
+    left: auto;
+    border-color: transparent transparent transparent #1e293b;
+    transform: translateX(5px) translateY(50%);
+}
+[data-tooltip-pos="left"]:hover:before,
+[data-tooltip-pos="left"]:hover:after {
+    transform: translateX(0) translateY(50%);
+}
+
+.steering-container {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+
+.steering-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.steering-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
 .heatmap-legend {
     display: flex;
     gap: 1.5rem;
