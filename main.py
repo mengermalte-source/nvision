@@ -645,6 +645,93 @@ def ui_add_employee(
     db.commit()
     return RedirectResponse(url="/ui/employees", status_code=303)
 
+# --- PAB MODULE ---
+
+@app.get("/ui/pab", response_class=HTMLResponse)
+def ui_pab_list(request: Request, division: Optional[str] = None, show_completed: bool = Query(False), db: Session = Depends(get_db), user: models.User = Depends(login_required)):
+    # Wir zeigen alle Projekte an, die noch nicht APPROVED sind (oder alle wenn show_completed=True), die PAB-relevant sind.
+    # Für das Forced Ranking sortieren wir nach pab_rank.
+    query = db.query(models.Project)
+    
+    if not show_completed:
+        query = query.filter(models.Project.pab_status != models.PABStatus.APPROVED)
+        
+    if division:
+        query = query.filter(models.Project.division == division)
+        
+    projects = query.order_by(models.Project.pab_rank.asc(), models.Project.id.asc()).all()
+    
+    return templates.TemplateResponse(
+        request=request, name="pab_list.html", context={
+            "projects": projects,
+            "active_page": "pab",
+            "PABStatus": models.PABStatus,
+            "selected_division": division,
+            "show_completed": show_completed
+        }
+    )
+
+@app.post("/ui/pab/reorder")
+async def ui_pab_reorder(project_ids: list[int] = Body(...), db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
+    for index, p_id in enumerate(project_ids):
+        project = db.query(models.Project).filter(models.Project.id == p_id).first()
+        if project:
+            project.pab_rank = index + 1
+    db.commit()
+    return {"status": "ok"}
+
+@app.post("/ui/pab/{project_id}/status")
+def ui_pab_update_status(
+    project_id: int, 
+    new_status: models.PABStatus = Form(...), 
+    comment: Optional[str] = Form(None),
+    db: Session = Depends(get_db), 
+    user: models.User = Depends(login_required)
+):
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Berechtigungsprüfung
+    if new_status == models.PABStatus.CONFIRMED:
+        # IT-Bestätigung: Muss Admin sein oder der responsible_it (einfacher String-Vergleich hier)
+        if user.role != models.UserRole.ADMIN and project.responsible_it != user.username:
+            raise HTTPException(status_code=403, detail="Nur der IT-Verantwortliche oder Admin kann bestätigen")
+    elif new_status == models.PABStatus.APPROVED:
+        if user.role != models.UserRole.ADMIN:
+            raise HTTPException(status_code=403, detail="Nur Admins können final freigeben")
+            
+    project.pab_status = new_status
+    
+    if comment:
+        db_comment = models.ProjectComment(
+            project_id=project_id,
+            author_id=user.id,
+            text=comment,
+            is_pab_relevant=True
+        )
+        db.add(db_comment)
+    
+    db.commit()
+    return RedirectResponse(url="/ui/pab", status_code=303)
+
+@app.post("/ui/pab/{project_id}/comment")
+def ui_pab_add_comment(
+    project_id: int,
+    text: str = Form(...),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(login_required)
+):
+    db_comment = models.ProjectComment(
+        project_id=project_id,
+        author_id=user.id,
+        text=text,
+        is_pab_relevant=True
+    )
+    db.add(db_comment)
+    db.commit()
+    return RedirectResponse(url="/ui/pab", status_code=303)
+
 @app.get("/ui/employees/{employee_id}/plan", response_class=HTMLResponse)
 def ui_employee_plan(request: Request, employee_id: int, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
     employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()

@@ -30,6 +30,12 @@ class ProjectStatus(enum.Enum):
     ON_HOLD = "on_hold"
     COMPLETED = "completed"
 
+class PABStatus(enum.Enum):
+    EVALUATION = "evaluation"
+    REVISION = "revision"
+    CONFIRMED = "confirmed"
+    APPROVED = "approved"
+
 class Team(Base):
     __tablename__ = "teams"
     id = Column(Integer, primary_key=True, index=True)
@@ -85,7 +91,9 @@ class Project(Base):
     # Neue Felder
     responsible_it = Column(String, nullable=True)
     responsible_fb = Column(String, nullable=True)
-    pab_approval = Column(Integer, default=0) # 0 = No, 1 = Yes
+    pab_approval = Column(Integer, default=0) # 0 = No, 1 = Yes (Legacy)
+    pab_status = Column(Enum(PABStatus), default=PABStatus.EVALUATION)
+    pab_rank = Column(Integer, default=999)
     cats_number = Column(String, nullable=True)
     pt_intern_pab = Column(Float, default=0.0)
     pt_intern_planned = Column(Float, default=0.0)
@@ -96,6 +104,19 @@ class Project(Base):
     staffings = relationship("Staffing", back_populates="project")
     bookings = relationship("Booking", back_populates="project")
     milestones = relationship("Milestone", back_populates="project", cascade="all, delete-orphan")
+    pab_comments = relationship("ProjectComment", back_populates="project", cascade="all, delete-orphan")
+
+class ProjectComment(Base):
+    __tablename__ = "project_comments"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"))
+    author_id = Column(Integer, ForeignKey("users.id"))
+    text = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    is_pab_relevant = Column(Boolean, default=True)
+
+    project = relationship("Project", back_populates="pab_comments")
+    author = relationship("User")
 
 class Milestone(Base):
     __tablename__ = "milestones"

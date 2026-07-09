@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import date, datetime
 from typing import Optional, List
-from models import ResourceType, ProjectStatus, UserRole
+from models import ResourceType, ProjectStatus, UserRole, PABStatus
 
 class MilestoneBase(BaseModel):
     name: str
@@ -27,6 +27,21 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: int
     is_active: bool
+    model_config = ConfigDict(from_attributes=True)
+
+class ProjectCommentBase(BaseModel):
+    text: str
+    is_pab_relevant: bool = True
+
+class ProjectCommentCreate(ProjectCommentBase):
+    project_id: int
+
+class ProjectComment(ProjectCommentBase):
+    id: int
+    project_id: int
+    author_id: int
+    created_at: datetime
+    author: User
     model_config = ConfigDict(from_attributes=True)
 
 class BookingBase(BaseModel):
@@ -95,6 +110,8 @@ class ProjectBase(BaseModel):
     responsible_it: Optional[str] = None
     responsible_fb: Optional[str] = None
     pab_approval: bool = False
+    pab_status: PABStatus = PABStatus.EVALUATION
+    pab_rank: int = 999
     cats_number: Optional[str] = None
     pt_intern_pab: float = 0.0
     pt_intern_planned: float = 0.0
@@ -109,6 +126,7 @@ class Project(ProjectBase):
     id: int
     progress: Optional[float] = 0.0 # Calculated field
     milestones: List[Milestone] = []
+    pab_comments: List[ProjectComment] = []
     model_config = ConfigDict(from_attributes=True)
 
 class StaffingBase(BaseModel):

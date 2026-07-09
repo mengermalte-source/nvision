@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="pab-container">
+    <div class="section-header">
+        <h2>Public Advisory Board - Forced Ranking & Freigabe</h2>
+        <p class="text-muted">Ordnen Sie die Maßnahmen per Drag & Drop an. Admins können die finale Freigabe erteilen.</p>
+    </div>
+
+    <div class="card">
+        <div class="tabs" style="display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="display: flex;">
+                    <a href="/ui/pab?{% if show_completed %}show_completed=true{% endif %}" class="tab-item {% if not selected_division %}active{% endif %}" style="padding: 0.75rem 1rem; text-decoration: none; color: var(--text-muted); border-bottom: 2px solid transparent;">Alle</a>
+                    <a href="/ui/pab?division=IT{% if show_completed %}&show_completed=true{% endif %}" class="tab-item {% if selected_division == 'IT' %}active{% endif %}" style="padding: 0.75rem 1rem; text-decoration: none; color: var(--text-muted); border-bottom: 2px solid transparent;">IT</a>
+                    <a href="/ui/pab?division=Netzgesellschaft{% if show_completed %}&show_completed=true{% endif %}" class="tab-item {% if selected_division == 'Netzgesellschaft' %}active{% endif %}" style="padding: 0.75rem 1rem; text-decoration: none; color: var(--text-muted); border-bottom: 2px solid transparent;">Netzgesellschaft</a>
+                    <a href="/ui/pab?division=Vertrieb{% if show_completed %}&show_completed=true{% endif %}" class="tab-item {% if selected_division == 'Vertrieb' %}active{% endif %}" style="padding: 0.75rem 1rem; text-decoration: none; color: var(--text-muted); border-bottom: 2px solid transparent;">Vertrieb</a>
+                    <a href="/ui/pab?division=Kraftwerk{% if show_completed %}&show_completed=true{% endif %}" class="tab-item {% if selected_division == 'Kraftwerk' %}active{% endif %}" style="padding: 0.75rem 1rem; text-decoration: none; color: var(--text-muted); border-bottom: 2px solid transparent;">Kraftwerk</a>
+                </div>
+                <div style="padding-right: 1rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer;">
+                        <input type="checkbox" id="showCompletedCheck" {% if show_completed %}checked{% endif %} onchange="toggleCompleted(this)">
+                        Abgeschlossene anzeigen
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .tab-item.active {
+                color: var(--primary) !important;
+                border-bottom-color: var(--primary) !important;
+                font-weight: 600;
+            }
+        </style>
+
+        <script>
+        function toggleCompleted(checkbox) {
+            const url = new URL(window.location.href);
+            if (checkbox.checked) {
+                url.searchParams.set('show_completed', 'true');
+            } else {
+                url.searchParams.delete('show_completed');
+            }
+            window.location.href = url.toString();
+        }
+        </script>
+
+        <div class="table-responsive">
+            <table class="table table-hover" id="pab-table">
+                <thead>
+                    <tr>
+                        {% if request.state.user.role.value == 'admin' %}
+                        <th style="width: 40px;"></th>
+                        {% endif %}
+                        <th style="width: 60px;">Rang</th>
+                        <th>Maßnahme</th>
+                        <th>IT-Verantw.</th>
+                        <th>Score</th>
+                        <th>PT (Int/Ext)</th>
+                        <th>Status</th>
+                        <th class="text-right">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="pab-sortable">
+                    {% for p in projects %}
+                    <tr data-id="{{ p.id }}">
+                        {% if request.state.user.role.value == 'admin' %}
+                        <td class="drag-handle">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="9" x2="15" y1="12" y2="12"/><line x1="9" x2="15" y1="6" y2="6"/><line x1="9" x2="15" y1="18" y2="18"/></svg>
+                        </td>
+                        {% endif %}
+                        <td class="rank-number">#{{ loop.index }}</td>
+                        <td>
+                            <div class="project-name-cell">
+                                <a href="/ui/projects/{{ p.id }}" class="font-bold">{{ p.name }}</a>
+                                <small class="text-muted block">{{ p.internal_number }}</small>
+                            </div>
+                        </td>
+                        <td>{{ p.responsible_it or '-' }}</td>
+                        <td><span class="badge badge-info">{{ "%.1f"|format(p.economic_score) }}</span></td>
+                        <td>{{ p.pt_intern_planned|int }} / {{ p.pt_extern_planned|int }}</td>
+                        <td>
+                            {% if p.pab_status.value == 'evaluation' %}
+                                <span class="badge status-planning">Evaluierung</span>
+                            {% elif p.pab_status.value == 'revision' %}
+                                <span class="badge status-on-hold">Nachbesserung</span>
+                            {% elif p.pab_status.value == 'confirmed' %}
+                                <span class="badge status-active">IT-Bestätigt</span>
+                            {% elif p.pab_status.value == 'approved' %}
+                                <span class="badge status-completed">PAB Freigegeben</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <div class="btn-group">
+                                <button class="btn btn-small btn-secondary" onclick="openCommentModal({{ p.id }})" title="Feedback">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                </button>
+                                
+                                {% if p.pab_status.value == 'evaluation' or p.pab_status.value == 'revision' %}
+                                    {% if request.state.user.role.value == 'admin' or p.responsible_it == request.state.user.username %}
+                                    <form action="/ui/pab/{{ p.id }}/status" method="POST" style="display:inline;">
+                                        <input type="hidden" name="new_status" value="confirmed">
+                                        <button type="submit" class="btn btn-small btn-success" title="IT-Bestätigung geben">Bestätigen</button>
+                                    </form>
+                                    {% endif %}
+                                {% endif %}
+
+                                {% if request.state.user.role.value == 'admin' %}
+                                    {% if p.pab_status.value != 'revision' %}
+                                    <button class="btn btn-small btn-warning" onclick="openRevisionModal({{ p.id }})" title="Rückfrage stellen">Rückfrage</button>
+                                    {% endif %}
+                                    
+                                    {% if p.pab_status.value == 'confirmed' %}
+                                    <form action="/ui/pab/{{ p.id }}/status" method="POST" style="display:inline;">
+                                        <input type="hidden" name="new_status" value="approved">
+                                        <button type="submit" class="btn btn-small btn-primary" title="Final freigeben">PAB-Freigabe</button>
+                                    </form>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Comment Modal -->
+<div id="commentModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="commentModalTitle">Feedback / Kommentare</h3>
+            <button class="close-modal" onclick="closeModals()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="commentList" class="comment-feed">
+                <!-- Wird per JS befüllt oder wir nutzen einfache Form für neuen Kommentar -->
+            </div>
+            <form action="" id="commentForm" method="POST">
+                <div class="form-group">
+                    <label>Neuer Kommentar</label>
+                    <textarea name="text" class="form-control" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Absenden</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Revision Modal -->
+<div id="revisionModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Rückfrage / Nachbesserung anfordern</h3>
+            <button class="close-modal" onclick="closeModals()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="revisionModalText"></p>
+            <form action="" id="revisionForm" method="POST">
+                <input type="hidden" name="new_status" value="revision">
+                <div class="form-group">
+                    <label>Grund / Was fehlt?</label>
+                    <textarea name="comment" class="form-control" rows="4" required placeholder="Bitte beschreiben Sie, was nachgebessert werden muss..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-warning">Rückfrage senden</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var el = document.getElementById('pab-sortable');
+        if (el && "{{ request.state.user.role.value }}" === "admin") {
+            var sortable = Sortable.create(el, {
+                handle: '.drag-handle',
+                animation: 150,
+                onEnd: function (evt) {
+                    updateRanks();
+                    saveRanks();
+                }
+            });
+        }
+    });
+
+    function updateRanks() {
+        const rows = document.querySelectorAll('#pab-sortable tr');
+        rows.forEach((row, index) => {
+            row.querySelector('.rank-number').textContent = '#' + (index + 1);
+        });
+    }
+
+    function saveRanks() {
+        const rows = document.querySelectorAll('#pab-sortable tr');
+        const ids = Array.from(rows).map(row => parseInt(row.dataset.id));
+        
+        fetch('/ui/pab/reorder', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(ids)
+        }).then(response => {
+            if (!response.ok) alert('Fehler beim Speichern des Rankings');
+        });
+    }
+
+    function openCommentModal(id) {
+        document.getElementById('commentModalTitle').textContent = 'Feedback / Kommentare';
+        document.getElementById('commentForm').action = '/ui/pab/' + id + '/comment';
+        document.getElementById('commentModal').style.display = 'flex';
+    }
+
+    function openRevisionModal(id) {
+        document.getElementById('revisionModalText').textContent = 'Rückfrage / Nachbesserung anfordern';
+        document.getElementById('revisionForm').action = '/ui/pab/' + id + '/status';
+        document.getElementById('revisionModal').style.display = 'flex';
+    }
+
+    function closeModals() {
+        document.getElementById('commentModal').style.display = 'none';
+        document.getElementById('revisionModal').style.display = 'none';
+    }
+
+    // Close on click outside
+    window.onclick = function(event) {
+        if (event.target.className === 'modal-overlay') {
+            closeModals();
+        }
+    }
+</script>
+
+<style>
+    .drag-handle { cursor: grab; color: #ccc; }
+    .drag-handle:active { cursor: grabbing; }
+    .comment-count {
+        background: var(--danger);
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 10px;
+        position: absolute;
+        top: -8px;
+        right: -8px;
+    }
+    .btn-group { position: relative; }
+    .font-bold { font-weight: 600; }
+    .block { display: block; }
+</style>
+{% endblock %}
