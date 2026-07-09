@@ -7,6 +7,7 @@ class MilestoneBase(BaseModel):
     name: str
     date: date
     description: Optional[str] = None
+    is_completed: bool = False
 
 class MilestoneCreate(MilestoneBase):
     project_id: int
@@ -202,3 +203,14 @@ class CapacityDetail(BaseModel):
     service_capacity_fte: float
     staffings: List[StaffingDetail]
     free_capacity_fte: float
+
+class ConflictInfo(BaseModel):
+    employee_name: str
+    month: int
+    year: int
+    total_fte: float
+    other_projects: List[str]
+
+class ExtensionCheckResponse(BaseModel):
+    has_conflicts: bool
+    conflicts: List[ConflictInfo]

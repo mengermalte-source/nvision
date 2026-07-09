@@ -244,6 +244,7 @@ body {
     flex-direction: column;
     transition: margin-left 0.3s ease;
     min-width: 0;
+    overflow-x: hidden;
 }
 
 body.sidebar-expanded .main-wrapper {
@@ -292,6 +293,7 @@ body.sidebar-expanded .main-wrapper {
     width: 100%;
     max-width: 1400px;
     margin: 0 auto;
+    min-width: 0;
 }
 
 .card {
@@ -811,6 +813,27 @@ body.sidebar-expanded .main-wrapper {
     border-color: #fee2e2;
 }
 
+.overall-status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.overall-status-icon:hover {
+    transform: scale(1.15);
+}
+
+.steering-overall {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    background: #f8fafc;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
 /* Steering Traffic Light Colors */
 .steering-dot {
     width: 14px;
@@ -1101,6 +1124,135 @@ body.sidebar-expanded .main-wrapper {
     .main-wrapper {
         margin-left: var(--sidebar-collapsed-width) !important;
     }
+}
+
+/* Timeline Styles */
+.timeline-container {
+    padding: 3rem 1rem 6rem 1rem;
+    position: relative;
+    min-height: 150px;
+}
+
+.timeline-track {
+    position: absolute;
+    top: 50%;
+    left: 4rem;
+    right: 4rem;
+    height: 6px;
+    background: #e2e8f0;
+    transform: translateY(-50%);
+    z-index: 1;
+    border-radius: 3px;
+}
+
+.timeline-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: var(--primary-color);
+    z-index: 2;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 3px;
+}
+
+.timeline-items {
+    position: absolute;
+    top: 50%;
+    left: 4rem;
+    right: 4rem;
+    transform: translateY(-50%);
+    z-index: 3;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.timeline-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    cursor: default;
+}
+
+.timeline-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: white;
+    border: 4px solid #cbd5e1;
+    transition: all 0.3s ease;
+    z-index: 4;
+    box-shadow: 0 0 0 4px white;
+}
+
+.timeline-item.completed .timeline-dot {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.timeline-item.failed .timeline-dot {
+    background: var(--danger);
+    border-color: var(--danger);
+}
+
+.timeline-item.current .timeline-dot {
+    border-color: var(--primary-color);
+    transform: scale(1.2);
+}
+
+.timeline-item:hover .timeline-dot {
+    transform: scale(1.3);
+    border-color: var(--primary-color);
+}
+
+.timeline-content {
+    text-align: center;
+    position: absolute;
+    top: 28px;
+    width: 140px;
+}
+
+.timeline-date {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--text-color);
+    display: block;
+}
+
+.timeline-name {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.timeline-start-end {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 0 2rem;
+    margin-top: -1rem;
+    margin-bottom: 2rem;
+}
+
+/* Toggle Switch für Meilensteine */
+.toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--text-muted);
+    transition: color 0.2s;
+}
+
+.toggle-btn.completed {
+    color: var(--primary-color);
 }
 
 /* Responsive */

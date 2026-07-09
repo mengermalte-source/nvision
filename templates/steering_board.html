@@ -11,12 +11,6 @@
             <a href="/ui/projektlenkung?division=Vertrieb&tab={{ current_tab }}" class="tab-item {% if selected_division == 'Vertrieb' %}active{% endif %}" style="flex: 1; min-width: 80px; text-align: center; border-radius: var(--radius-sm);">Vertrieb</a>
             <a href="/ui/projektlenkung?division=Kraftwerk&tab={{ current_tab }}" class="tab-item {% if selected_division == 'Kraftwerk' %}active{% endif %}" style="flex: 1; min-width: 100px; text-align: center; border-radius: var(--radius-sm);">Kraftwerk</a>
         </div>
-        <div class="filter-legend hide-on-tablet" style="padding: 0 1rem; display: flex; gap: 0.75rem; align-items: center; font-size: 0.85rem; color: var(--text-muted); background: #f8fafc; border-radius: var(--radius-sm); margin-left: 0.5rem;">
-             <span style="font-weight: 600;">Legende:</span>
-             <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot green" style="width: 10px; height: 10px;"></span> OK</span>
-             <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot yellow" style="width: 10px; height: 10px;"></span> Achtung</span>
-             <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="steering-dot red" style="width: 10px; height: 10px;"></span> Kritisch</span>
-        </div>
     </div>
 </div>
 
@@ -27,10 +21,15 @@
     </div>
 </div>
 
-<div id="tab-content-list" class="tab-content" style="display: {% if current_tab == 'list' %}block{% else %}none{% endif %};">
+<div id="tab-content-list" class="tab-content" style="display: none;">
     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 1.5rem;">
         {% for p in projects %}
-        <div class="card steering-card" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; position: relative; border-top: 4px solid {% if p.steering_status.value == 'GREEN' %}#22c55e{% elif p.steering_status.value == 'YELLOW' %}#eab308{% elif p.steering_status.value == 'RED' %}#ef4444{% else %}#cbd5e1{% endif %};">
+        <div class="card steering-card" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; position: relative;">
+            {% set s_color = '#cbd5e1' %}
+            {% if p.steering_status.value == 'GREEN' %}{% set s_color = '#22c55e' %}{% endif %}
+            {% if p.steering_status.value == 'YELLOW' %}{% set s_color = '#eab308' %}{% endif %}
+            {% if p.steering_status.value == 'RED' %}{% set s_color = '#ef4444' %}{% endif %}
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: #cbd5e1; border-radius: var(--radius-lg) var(--radius-lg) 0 0;"></div>
             <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;">
                 <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 1; min-width: 0;">
                     <a href="/ui/projects/{{ p.id }}" class="project-name-link" style="font-size: 1.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;" title="{{ p.name }}">{{ p.name }}</a>
@@ -39,23 +38,35 @@
                         <span style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;">Endet am: {{ p.end_date }}</span>
                     </div>
                 </div>
-                <div class="steering-container">
-                    <div class="steering-group" data-tooltip="Zeitplan: {{ 'OK' if p.steering_time.value == 'GREEN' else 'Verzögerung' if p.steering_time.value == 'YELLOW' else 'Kritisch' if p.steering_time.value == 'RED' else 'Keine Info' }}">
-                        <span class="steering-dot {{ p.steering_time.value.lower() }}"></span>
-                        <span class="steering-label">Z</span>
-                    </div>
-                    <div class="steering-group" data-tooltip="Budget: {{ 'OK' if p.steering_budget.value == 'GREEN' else 'Abweichung' if p.steering_budget.value == 'YELLOW' else 'Kritisch' if p.steering_budget.value == 'RED' else 'Keine Info' }}">
-                        <span class="steering-dot {{ p.steering_budget.value.lower() }}"></span>
-                        <span class="steering-label">B</span>
-                    </div>
-                    <div class="steering-group" data-tooltip="Qualität: {{ 'OK' if p.steering_quality.value == 'GREEN' else 'Mängel' if p.steering_quality.value == 'YELLOW' else 'Kritisch' if p.steering_quality.value == 'RED' else 'Keine Info' }}">
-                        <span class="steering-dot {{ p.steering_quality.value.lower() }}"></span>
-                        <span class="steering-label">Q</span>
+                <div class="steering-overall">
+                    {% set stime = p.steering_time.value %}
+                    {% set sbudget = p.steering_budget.value %}
+                    {% set squality = p.steering_quality.value %}
+                    {% set overall = 'none' %}
+                    {% if stime == 'RED' or sbudget == 'RED' or squality == 'RED' %}
+                        {% set overall = 'red' %}
+                    {% elif stime == 'YELLOW' or sbudget == 'YELLOW' or squality == 'YELLOW' %}
+                        {% set overall = 'yellow' %}
+                    {% elif stime == 'GREEN' or sbudget == 'GREEN' or squality == 'GREEN' %}
+                        {% set overall = 'green' %}
+                    {% endif %}
+
+                    <div class="overall-status-icon {{ overall }}">
+                        {% if overall == 'green' %}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #166534;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        {% elif overall == 'yellow' %}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #a16207;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        {% elif overall == 'red' %}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #991b1b;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                        {% else %}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #94a3b8; opacity: 0.5;"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                        {% endif %}
                     </div>
                 </div>
             </div>
 
-            <div style="background: #f8fafc; padding: 1rem; border-radius: var(--radius-md); font-size: 0.9rem; flex: 1; border: 1px solid var(--border-color);">
+                <div style="background: #f8fafc; padding: 1rem; border-radius: var(--radius-md); font-size: 0.9rem; flex: 1; border: 1px solid var(--border-color);">
+
                 <div style="font-weight: 600; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
                     <span>Aktueller Statusbericht</span>
                     {% if p.steering_last_update %}
@@ -131,7 +142,7 @@
     {% endif %}
 </div>
 
-<div id="tab-content-summary" class="tab-content" style="display: {% if current_tab == 'summary' %}block{% else %}none{% endif %};">
+<div id="tab-content-summary" class="tab-content" style="display: none;">
     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
         {% set counts = {'green': 0, 'yellow': 0, 'red': 0, 'none': 0} %}
         {% for p in projects %}
@@ -173,7 +184,7 @@
                 <tbody>
                     {% for p in projects if p.steering_status.value == 'RED' or p.steering_status.value == 'YELLOW' %}
                     <tr>
-                        <td><strong>{{ p.name }}</strong></td>
+                        <td><a href="/ui/projects/{{ p.id }}" class="project-name-link">{{ p.name }}</a></td>
                         <td style="text-align: center;">
                             {% if p.steering_status.value == 'RED' %}
                                 <span class="badge" style="background-color: #ef4444; color: white;">Kritisch</span>
@@ -221,12 +232,21 @@
         // Update division links to include the current tab
         document.querySelectorAll('.tabs-container:first-child .tab-item').forEach(link => {
             if (link.tagName === 'A') {
-                const linkUrl = new URL(link.href, window.location.origin);
-                linkUrl.searchParams.set('tab', tabId);
-                link.href = linkUrl.pathname + linkUrl.search;
+                const href = link.getAttribute('href');
+                if (href) {
+                    const url = new URL(href, window.location.origin);
+                    url.searchParams.set('tab', tabId);
+                    // Wichtig: relativen Pfad beibehalten
+                    link.setAttribute('href', url.pathname + url.search);
+                }
             }
         });
     }
+
+    window.addEventListener('DOMContentLoaded', (event) => {
+        const currentTab = "{{ current_tab }}";
+        showContentTab(currentTab);
+    });
 </script>
 
 <style>

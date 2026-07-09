@@ -36,7 +36,7 @@
                 {% for p in critical_projects %}
                 <div class="top-list-item">
                     <div style="display: flex; flex-direction: column;">
-                        <span class="item-name">{{ p.name }}</span>
+                        <a href="/ui/projects/{{ p.id }}" class="item-name" style="text-decoration: none; color: inherit;">{{ p.name }}</a>
                         <small style="color: var(--text-muted);">Zeit: {{ p.time_progress }}% | Ist: {{ p.work_progress }}%</small>
                     </div>
                     <span class="item-value" style="color: var(--danger);">+{{ p.diff }}%</span>

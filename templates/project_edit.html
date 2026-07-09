@@ -80,7 +80,16 @@
             </div>
             <div class="form-group">
                 <label>Enddatum</label>
-                <input type="date" name="end_date" value="{{ project.end_date }}" required>
+                <input type="date" name="end_date" id="end_date" value="{{ project.end_date }}" required>
+            </div>
+
+            <!-- Konflikt-Warnung Container -->
+            <div id="conflict-warning" style="grid-column: 1 / -1; display: none; margin-top: 1rem; padding: 1rem; background-color: #fff5f5; border-radius: 8px; border: 1px solid #feb2b2;">
+                <h3 style="margin-top: 0; color: #c53030; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-exclamation-triangle"></i> Ressourcen-Konflikte bei Verlängerung
+                </h3>
+                <p style="margin-bottom: 0.5rem; font-size: 0.9rem;">Die Verlängerung des Projekts führt bei folgenden Mitarbeitern zu einer Überplanung:</p>
+                <ul id="conflict-list" style="margin-bottom: 0; font-size: 0.85rem;"></ul>
             </div>
 
             <!-- Aufwände -->
@@ -215,5 +224,50 @@
     
     // Initial color
     updateScoreColor(scoreInput.value);
+
+    // Extension Check
+    const endDateInput = document.getElementById('end_date');
+    const conflictWarning = document.getElementById('conflict-warning');
+    const conflictList = document.getElementById('conflict-list');
+    const originalEndDate = "{{ project.end_date }}";
+    const projectId = "{{ project.id }}";
+
+    async function checkExtension() {
+        const newEndDate = endDateInput.value;
+        if (!newEndDate || newEndDate <= originalEndDate) {
+            conflictWarning.style.display = 'none';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/projects/${projectId}/check-extension?new_end_date=${newEndDate}`);
+            const data = await response.json();
+
+            if (data.has_conflicts) {
+                conflictList.innerHTML = '';
+                // Gruppiere nach Mitarbeiter für schönere Darstellung
+                const grouped = data.conflicts.reduce((acc, c) => {
+                    if (!acc[c.employee_name]) acc[c.employee_name] = [];
+                    acc[c.employee_name].push(c);
+                    return acc;
+                }, {});
+
+                for (const empName in grouped) {
+                    const li = document.createElement('li');
+                    li.style.marginBottom = '0.5rem';
+                    const months = grouped[empName].map(c => `${c.month}/${c.year} (${(c.total_fte * 100).toFixed(0)}% FTE, Konflikt mit: ${c.other_projects.join(', ')})`).join(', ');
+                    li.innerHTML = `<strong>${empName}</strong>: ${months}`;
+                    conflictList.appendChild(li);
+                }
+                conflictWarning.style.display = 'block';
+            } else {
+                conflictWarning.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error checking extension:', error);
+        }
+    }
+
+    endDateInput.addEventListener('change', checkExtension);
 </script>
 {% endblock %}

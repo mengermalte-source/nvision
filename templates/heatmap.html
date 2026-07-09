@@ -11,7 +11,7 @@
         <div class="action-buttons">
             {% set available = available_years(request) %}
             {% for y in available %}
-            <a href="/?year={{ y }}{% if selected_team_id %}&team_id={{ selected_team_id }}{% endif %}" class="btn {% if y == year %}btn-primary{% else %}btn-outline{% endif %}">{{ y }}</a>
+            <a href="/ui/heatmap?year={{ y }}{% if selected_team_id %}&team_id={{ selected_team_id }}{% endif %}" class="btn {% if y == year %}btn-primary{% else %}btn-outline{% endif %}">{{ y }}</a>
             {% endfor %}
         </div>
     </div>
@@ -19,9 +19,9 @@
     <div class="tabs">
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <div>
-                <a href="/?year={{ year }}" class="tab-item {% if not selected_team_id %}active{% endif %}">Alle</a>
+                <a href="/ui/heatmap?year={{ year }}" class="tab-item {% if not selected_team_id %}active{% endif %}">Alle</a>
                 {% for team in teams %}
-                <a href="/?year={{ year }}&team_id={{ team.id }}" class="tab-item {% if selected_team_id == team.id %}active{% endif %}">{{ team.name }}</a>
+                <a href="/ui/heatmap?year={{ year }}&team_id={{ team.id }}" class="tab-item {% if selected_team_id == team.id %}active{% endif %}">{{ team.name }}</a>
                 {% endfor %}
             </div>
         </div>

@@ -585,7 +585,7 @@ def ui_add_project(
         db.add(db_budget_unterhalt)
 
     db.commit()
-    return RedirectResponse(url="/ui/projects", status_code=303)
+    return RedirectResponse(url=f"/ui/projects/{db_project.id}", status_code=303)
 
 @app.get("/ui/projects/{project_id}/edit", response_class=HTMLResponse)
 def ui_edit_project_form(request: Request, project_id: int, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
@@ -719,7 +719,7 @@ def ui_edit_project(
         project.steering_last_update = date.today()
 
     db.commit()
-    return RedirectResponse(url="/ui/projects", status_code=303)
+    return RedirectResponse(url=f"/ui/projects/{project_id}#steering", status_code=303)
 
 @app.post("/ui/projects/{project_id}/status")
 def ui_update_project_status(project_id: int, status: models.ProjectStatus = Form(...), db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
@@ -729,7 +729,7 @@ def ui_update_project_status(project_id: int, status: models.ProjectStatus = For
     
     project.status = status
     db.commit()
-    return RedirectResponse(url="/ui/projects", status_code=303)
+    return RedirectResponse(url=f"/ui/projects/{project_id}", status_code=303)
 
 @app.post("/ui/projects/{project_id}/complete")
 def ui_complete_project(project_id: int, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
@@ -739,7 +739,7 @@ def ui_complete_project(project_id: int, db: Session = Depends(get_db), user: mo
     
     project.status = models.ProjectStatus.COMPLETED
     db.commit()
-    return RedirectResponse(url="/ui/projects", status_code=303)
+    return RedirectResponse(url=f"/ui/projects/{project_id}", status_code=303)
 
 @app.post("/ui/projects/reorder")
 async def ui_reorder_projects(project_ids: list[int] = Body(...), db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
@@ -750,6 +750,74 @@ async def ui_reorder_projects(project_ids: list[int] = Body(...), db: Session = 
             project.priority = index + 1
     db.commit()
     return {"status": "ok"}
+
+@app.get("/api/projects/{project_id}/check-extension", response_model=schemas.ExtensionCheckResponse)
+def api_check_extension(project_id: int, new_end_date: date, db: Session = Depends(get_db), user: models.User = Depends(login_required)):
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Wenn das neue Enddatum nicht nach dem aktuellen liegt, gibt es keinen neuen Konflikt durch Verlängerung
+    if new_end_date <= project.end_date:
+        return schemas.ExtensionCheckResponse(has_conflicts=False, conflicts=[])
+
+    # Wir prüfen den Zeitraum von HEUTE bis zum NEUEN Enddatum
+    # (Oder ab dem aktuellen Projekt-Enddatum bis zum neuen Enddatum)
+    check_start = project.end_date + timedelta(days=1)
+    check_end = new_end_date
+    
+    conflicts = []
+    
+    # Alle Mitarbeiter, die aktuell auf das Projekt besetzt sind
+    current_staffings = db.query(models.Staffing).filter(models.Staffing.project_id == project_id).all()
+    
+    for s in current_staffings:
+        emp = s.employee
+        total_cap = emp.weekly_hours / 40.0
+        service_allocs = db.query(models.ServiceAllocation).filter(models.ServiceAllocation.employee_id == emp.id).all()
+        service_cap = sum(sa.capacity_percent for sa in service_allocs) / 100.0
+        
+        # Iteriere durch die Monate im Verlängerungszeitraum
+        curr = check_start
+        checked_months = set()
+        while curr <= check_end:
+            month_key = (curr.year, curr.month)
+            if month_key not in checked_months:
+                first_day = date(curr.year, curr.month, 1)
+                last_day = date(curr.year, curr.month, calendar.monthrange(curr.year, curr.month)[1])
+                
+                # Andere Staffings in diesem Monat (ohne das aktuelle Projekt, da wir dessen neue FTE dazurechnen)
+                other_staffings = db.query(models.Staffing).filter(
+                    models.Staffing.employee_id == emp.id,
+                    models.Staffing.project_id != project_id,
+                    models.Staffing.start_date <= last_day,
+                    models.Staffing.end_date >= first_day
+                ).all()
+                
+                other_staffed_cap = sum(os.capacity_fte for os in other_staffings)
+                hypothetical_total = service_cap + other_staffed_cap + s.capacity_fte
+                
+                if hypothetical_total > total_cap + 0.01:
+                    conflicts.append(schemas.ConflictInfo(
+                        employee_name=emp.name,
+                        month=curr.month,
+                        year=curr.year,
+                        total_fte=hypothetical_total,
+                        other_projects=[os.project.name for os in other_staffings]
+                    ))
+                
+                checked_months.add(month_key)
+            
+            # Zum nächsten Monat springen
+            if curr.month == 12:
+                curr = date(curr.year + 1, 1, 1)
+            else:
+                curr = date(curr.year, curr.month + 1, 1)
+                
+    return schemas.ExtensionCheckResponse(
+        has_conflicts=len(conflicts) > 0,
+        conflicts=conflicts
+    )
 
 @app.get("/ui/projects/{project_id}", response_class=HTMLResponse)
 def ui_project_detail(request: Request, project_id: int, db: Session = Depends(get_db), user: models.User = Depends(login_required)):
@@ -779,7 +847,8 @@ def ui_project_detail(request: Request, project_id: int, db: Session = Depends(g
             "progress": progress,
             "budget_current_invest": budget_current_invest,
             "budget_current_unterhalt": budget_current_unterhalt,
-            "active_page": "projects"
+            "active_page": "projects",
+            "today": date.today()
         }
     )
 
@@ -789,6 +858,7 @@ def ui_add_milestone(
     name: str = Form(...),
     date: date = Form(...),
     description: Optional[str] = Form(None),
+    is_completed: bool = Form(False),
     db: Session = Depends(get_db),
     user: models.User = Depends(admin_required)
 ):
@@ -796,11 +866,47 @@ def ui_add_milestone(
         project_id=project_id,
         name=name,
         date=date,
-        description=description
+        description=description,
+        is_completed=is_completed
     )
     db.add(db_milestone)
     db.commit()
-    return RedirectResponse(url=f"/ui/projects/{project_id}", status_code=303)
+    return RedirectResponse(url=f"/ui/projects/{project_id}#roadmap", status_code=303)
+
+@app.post("/ui/projects/{project_id}/milestones/{milestone_id}/edit")
+def ui_edit_milestone(
+    project_id: int,
+    milestone_id: int,
+    name: Optional[str] = Form(None),
+    date: Optional[date] = Form(None),
+    description: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(admin_required)
+):
+    milestone = db.query(models.Milestone).filter(models.Milestone.id == milestone_id).first()
+    if milestone:
+        if name is not None:
+            milestone.name = name
+        if date is not None:
+            milestone.date = date
+        if description is not None:
+            milestone.description = description
+        db.commit()
+    return RedirectResponse(url=f"/ui/projects/{project_id}#roadmap", status_code=303)
+
+
+@app.post("/ui/projects/{project_id}/milestones/{milestone_id}/toggle")
+def ui_toggle_milestone(
+    project_id: int,
+    milestone_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(admin_required)
+):
+    milestone = db.query(models.Milestone).filter(models.Milestone.id == milestone_id).first()
+    if milestone:
+        milestone.is_completed = not milestone.is_completed
+        db.commit()
+    return RedirectResponse(url=f"/ui/projects/{project_id}#roadmap", status_code=303)
 
 @app.post("/ui/projects/{project_id}/milestones/{milestone_id}/delete")
 def ui_delete_milestone(project_id: int, milestone_id: int, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
@@ -808,7 +914,7 @@ def ui_delete_milestone(project_id: int, milestone_id: int, db: Session = Depend
     if milestone:
         db.delete(milestone)
         db.commit()
-    return RedirectResponse(url=f"/ui/projects/{project_id}", status_code=303)
+    return RedirectResponse(url=f"/ui/projects/{project_id}#roadmap", status_code=303)
 
 @app.get("/ui/employees", response_class=HTMLResponse)
 def ui_employees(request: Request, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
@@ -970,14 +1076,47 @@ def ui_pab_mark_read(
     return {"status": "ok"}
 
 @app.get("/ui/employees/{employee_id}/plan", response_class=HTMLResponse)
-def ui_employee_plan(request: Request, employee_id: int, db: Session = Depends(get_db), user: models.User = Depends(admin_required)):
+def ui_employee_plan(request: Request, employee_id: int, db: Session = Depends(get_db), user: models.User = Depends(login_required)):
     employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Projekte und PT-Berechnung
+    # 1 PT = 8 Stunden
+    
+    # Geplante PT aus Staffings
+    # Staffing hat capacity_fte und Zeitraum. 
+    # Wir nehmen vereinfacht an: 1 FTE * (Arbeitstage im Zeitraum) * 8h / 8h = Arbeitstage?
+    # Oder wir schauen uns einfach die Summe der Bookings an, wie vom User gewünscht ("mit wievielen pt gebucht ist").
+    # "Gebucht" bezieht sich oft auf IST-Stunden (Bookings).
+    
+    project_data = {}
+    
+    # Bookings (IST)
+    for booking in employee.bookings:
+        p_id = booking.project_id
+        if p_id not in project_data:
+            project_data[p_id] = {"name": booking.project.name, "ist_pt": 0.0, "planned_pt": 0.0}
+        project_data[p_id]["ist_pt"] += booking.hours / 8.0
+        
+    # Staffings (Geplant)
+    for staffing in employee.staffings:
+        p_id = staffing.project_id
+        if p_id not in project_data:
+            project_data[p_id] = {"name": staffing.project.name, "ist_pt": 0.0, "planned_pt": 0.0}
+        
+        # Vereinfachte Berechnung der geplanten PT: 
+        # (Enddatum - Startdatum).days * capacity_fte * (5/7) (für Arbeitstage)
+        days = (staffing.end_date - staffing.start_date).days + 1
+        workdays = days * (5/7) # Grobe Schätzung
+        project_data[p_id]["planned_pt"] += workdays * staffing.capacity_fte
+
     return templates.TemplateResponse(
         request=request, name="employee_plan.html", context={
             "employee": employee,
-            "active_page": "employees"
+            "project_data": project_data.values(),
+            "active_page": "employees",
+            "user": user
         }
     )
 
@@ -1068,7 +1207,7 @@ def ui_add_staffing(
     )
     db.add(db_staffing)
     db.commit()
-    return RedirectResponse(url="/ui/projects", status_code=303)
+    return RedirectResponse(url=f"/ui/projects/{project_id}#staffing", status_code=303)
 
 @app.post("/ui/staffing/bulk_add")
 async def ui_bulk_add_staffing(
@@ -1100,7 +1239,7 @@ async def ui_bulk_add_staffing(
             db.add(db_staffing)
     
     db.commit()
-    return RedirectResponse(url="/ui/projects", status_code=303)
+    return RedirectResponse(url=f"/ui/projects/{project_id}#staffing", status_code=303)
 
 # API Endpoints
 @app.get("/teams/", response_model=List[schemas.Team])

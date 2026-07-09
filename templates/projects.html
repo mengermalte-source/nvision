@@ -48,9 +48,9 @@
                     <th style="width: 40px;"></th>
                     {% endif %}
                     <th data-label="Projekt">Projekt / Details</th>
-                    <th data-label="Steuerung" style="width: 100px; text-align: center;">Steuerung</th>
+                    <th data-label="Status" style="width: 80px; text-align: center;">Status</th>
                     <th data-label="Prio" style="width: 60px;">Prio</th>
-                    <th data-label="Status" style="width: 120px;">Status</th>
+                    <th data-label="Phaseneinstufung" style="width: 120px;">Phase</th>
                     <th data-label="Verantwortlich" class="hide-on-tablet">Verantwortlich</th>
                     <th data-label="Zeitraum" class="hide-on-laptop">Zeitraum</th>
                     <th data-label="Fortschritt" class="hide-on-desktop-small" style="width: 160px;">Fortschritt</th>
@@ -96,36 +96,51 @@
                             </div>
                         </div>
                     </td>
-                    <td data-label="Steuerung" style="text-align: center;">
-                        <div class="steering-container" data-tooltip="Status-Update am: {{ p.steering_last_update if p.steering_last_update else 'nie' }}" data-tooltip-pos="left">
-                            <div class="steering-group" data-tooltip="Zeitplan: {{ 'OK' if p.steering_time.value == 'GREEN' else 'Verzögerung' if p.steering_time.value == 'YELLOW' else 'Kritisch' if p.steering_time.value == 'RED' else 'Keine Info' }}">
-                                <span class="steering-dot {{ p.steering_time.value.lower() }}"></span>
-                                <span class="steering-label">Z</span>
-                            </div>
-                            <div class="steering-group" data-tooltip="Budget: {{ 'OK' if p.steering_budget.value == 'GREEN' else 'Abweichung' if p.steering_budget.value == 'YELLOW' else 'Kritisch' if p.steering_budget.value == 'RED' else 'Keine Info' }}">
-                                <span class="steering-dot {{ p.steering_budget.value.lower() }}"></span>
-                                <span class="steering-label">B</span>
-                            </div>
-                            <div class="steering-group" data-tooltip="Qualität: {{ 'OK' if p.steering_quality.value == 'GREEN' else 'Mängel' if p.steering_quality.value == 'YELLOW' else 'Kritisch' if p.steering_quality.value == 'RED' else 'Keine Info' }}">
-                                <span class="steering-dot {{ p.steering_quality.value.lower() }}"></span>
-                                <span class="steering-label">Q</span>
-                            </div>
+                    <td data-label="Status" style="text-align: center;">
+                        {% set s_time = p.steering_time.value %}
+                        {% set s_budget = p.steering_budget.value %}
+                        {% set s_quality = p.steering_quality.value %}
+                        
+                        {% if s_time == 'RED' or s_budget == 'RED' or s_quality == 'RED' %}
+                            {% set overall_status = 'red' %}
+                            {% set tooltip = 'Kritisch: ' ~ (('Zeit ' if s_time == 'RED' else '') ~ ('Budget ' if s_budget == 'RED' else '') ~ ('Qualität' if s_quality == 'RED' else '')) %}
+                        {% elif s_time == 'YELLOW' or s_budget == 'YELLOW' or s_quality == 'YELLOW' %}
+                            {% set overall_status = 'yellow' %}
+                            {% set tooltip = 'Achtung: ' ~ (('Zeit ' if s_time == 'YELLOW' else '') ~ ('Budget ' if s_budget == 'YELLOW' else '') ~ ('Qualität' if s_quality == 'YELLOW' else '')) %}
+                        {% elif s_time == 'GREEN' or s_budget == 'GREEN' or s_quality == 'GREEN' %}
+                            {% set overall_status = 'green' %}
+                            {% set tooltip = 'Alles OK' %}
+                        {% else %}
+                            {% set overall_status = 'none' %}
+                            {% set tooltip = 'Keine Information' %}
+                        {% endif %}
+
+                        <div class="overall-status-icon {{ overall_status }}" data-tooltip="{{ tooltip }}" data-tooltip-pos="left">
+                            {% if overall_status == 'green' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #166534;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            {% elif overall_status == 'yellow' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #a16207;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            {% elif overall_status == 'red' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #991b1b;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                            {% else %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #94a3b8; opacity: 0.5;"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                            {% endif %}
                         </div>
                     </td>
                     <td data-label="Prio">
                         {% if p.priority == 1 %}
-                                <span class="badge" style="background-color: var(--danger); color: white;">P1</span>
-                                {% elif p.priority == 2 %}
-                                <span class="badge" style="background-color: var(--warning); color: white;">P2</span>
-                                {% elif p.priority == 3 %}
-                                <span class="badge" style="background-color: var(--info); color: white;">P3</span>
-                                {% elif p.priority == 4 %}
-                                <span class="badge" style="background-color: var(--success); color: white;">P4</span>
+                            <span class="badge" style="background-color: var(--danger); color: white;">P1</span>
+                        {% elif p.priority == 2 %}
+                            <span class="badge" style="background-color: var(--warning); color: white;">P2</span>
+                        {% elif p.priority == 3 %}
+                            <span class="badge" style="background-color: var(--info); color: white;">P3</span>
+                        {% elif p.priority == 4 %}
+                            <span class="badge" style="background-color: var(--success); color: white;">P4</span>
                         {% else %}
                             <span class="badge badge-default">P{{ p.priority }}</span>
                         {% endif %}
                     </td>
-                    <td data-label="Status">
+                    <td data-label="Phaseneinstufung">
                         <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                             {% if request.state.user and request.state.user.role.value == 'admin' %}
                             <form action="/ui/projects/{{ p.id }}/status" method="post" id="status-form-{{ p.id }}">
@@ -206,11 +221,10 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 {% endif %}
 <script>
-    // Fortschrittsbalken animieren (wie in project_detail.html)
+    // Fortschrittsbalken animieren
     document.querySelectorAll('.progress-bar-fill').forEach(bar => {
         const progress = bar.getAttribute('data-progress');
         if (progress) {
-            // Kleine Verzögerung für den Effekt
             setTimeout(() => {
                 bar.style.width = progress + '%';
             }, 100);
@@ -238,7 +252,6 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'ok') {
-                        // Optional: Erfolgsmeldung anzeigen oder Seite neu laden
                         console.log('Reihenfolge gespeichert');
                     }
                 })

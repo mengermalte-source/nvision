@@ -55,7 +55,7 @@
                 {% for r in employees %}
                 <tr>
                     <td>{{ r.id }}</td>
-                    <td><a href="/ui/employees/{{ r.id }}/plan" style="color: inherit; text-decoration: none;"><strong>{{ r.name }}</strong></a></td>
+                    <td><a href="/ui/employees/{{ r.id }}/plan" style="color: var(--primary-color); text-decoration: underline;"><strong>{{ r.name }}</strong></a></td>
                     <td>
                         <span class="badge badge-default">{{ r.type.value }}</span>
                     </td>

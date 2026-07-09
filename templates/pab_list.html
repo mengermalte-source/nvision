@@ -22,10 +22,10 @@
         <!-- Haupt-Tabs: Freigabestatus -->
         <div class="tabs" style="background: white; padding: 0.5rem; border-radius: var(--radius-md); box-shadow: var(--card-shadow);">
             <div style="display: flex; gap: 0.5rem;">
-                <a href="/ui/pab?show_approved=false{% if selected_division %}&division={{ selected_division }}{% endif %}" class="tab-item {% if not show_approved %}active{% endif %}" style="flex: 1; text-align: center; border-radius: var(--radius-sm);">
+                <a href="/ui/pab?show_approved=false{% if selected_division %}&division={{ selected_division | urlencode }}{% endif %}" class="tab-item {% if not show_approved %}active{% endif %}" style="flex: 1; text-align: center; border-radius: var(--radius-sm);">
                     In Bearbeitung
                 </a>
-                <a href="/ui/pab?show_approved=true{% if selected_division %}&division={{ selected_division }}{% endif %}" class="tab-item {% if show_approved %}active{% endif %}" style="flex: 1; text-align: center; border-radius: var(--radius-sm);">
+                <a href="/ui/pab?show_approved=true{% if selected_division %}&division={{ selected_division | urlencode }}{% endif %}" class="tab-item {% if show_approved %}active{% endif %}" style="flex: 1; text-align: center; border-radius: var(--radius-sm);">
                     Freigegeben
                 </a>
             </div>

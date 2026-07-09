@@ -3,6 +3,35 @@
 
 {% block content %}
 <div class="card">
+    <h2>Projektzuordnungen</h2>
+    <div class="modern-table-wrapper">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>Projekt</th>
+                    <th style="text-align: right;">Geplant (PT)</th>
+                    <th style="text-align: right;">IST (PT)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in project_data %}
+                <tr>
+                    <td>{{ p.name }}</td>
+                    <td style="text-align: right;">{{ p.planned_pt | round(1) }}</td>
+                    <td style="text-align: right;">{{ p.ist_pt | round(1) }}</td>
+                </tr>
+                {% endfor %}
+                {% if not project_data %}
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #6c757d;">Keine Projektzuordnungen oder Buchungen gefunden.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
     <h2>Kapazitätsplanung</h2>
     <p>Hier können Sie die jährliche Kapazität für <strong>{{ employee.name }}</strong> festlegen.</p>
     

@@ -166,6 +166,7 @@ class Milestone(Base):
     name = Column(String)
     date = Column(Date)
     description = Column(String, nullable=True)
+    is_completed = Column(Boolean, default=False)
 
     project = relationship("Project", back_populates="milestones")
 

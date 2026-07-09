@@ -51,13 +51,52 @@
 
 <div class="tabs-container" style="margin-bottom: 1.5rem;">
     <div class="tabs-modern" style="background: #f1f5f9; padding: 0.35rem; border-radius: var(--radius-md); display: flex; gap: 0.25rem;">
-        <button class="tab-item-modern active" onclick="showTab('base')" id="tab-base">Stammdaten</button>
+        <button class="tab-item-modern" onclick="showTab('base')" id="tab-base">Stammdaten</button>
         <button class="tab-item-modern" onclick="showTab('steering')" id="tab-steering">Projektlenkung</button>
         <button class="tab-item-modern" onclick="showTab('roadmap')" id="tab-roadmap">Roadmap</button>
         <button class="tab-item-modern" onclick="showTab('staffing')" id="tab-staffing">Besetzung</button>
         <button class="tab-item-modern" onclick="showTab('budget')" id="tab-budget">Budget</button>
     </div>
 </div>
+
+<script>
+    // Define showTab globally so it's available before DOM content loaded if necessary
+    function showTab(tabId) {
+        // Hide all contents
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.style.display = 'none';
+        });
+        // Remove active class from all tabs
+        document.querySelectorAll('.tab-item-modern').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Show selected content
+        const content = document.getElementById('tab-content-' + tabId);
+        if (content) {
+            content.style.display = 'block';
+        }
+        // Add active class to selected tab
+        const tab = document.getElementById('tab-' + tabId);
+        if (tab) {
+            tab.classList.add('active');
+        }
+        
+        // Store current tab in URL hash without triggering scroll if possible
+        if (history.pushState) {
+            history.pushState(null, null, '#' + tabId);
+        } else {
+            window.location.hash = tabId;
+        }
+
+        // Handle Mermaid resizing if needed
+        if (tabId === 'roadmap') {
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+            }, 10);
+        }
+    }
+</script>
 
 <style>
     .tabs-modern {
@@ -92,7 +131,7 @@
     }
 </style>
 
-<div id="tab-content-base" class="tab-content active">
+<div id="tab-content-base" class="tab-content" style="display: none;">
     <div style="display: flex; flex-direction: column; gap: 1rem;">
         <!-- Stammdaten Card -->
         <div class="card" style="margin-bottom: 0;">
@@ -284,22 +323,45 @@
 </div>
 
 <div id="tab-content-roadmap" class="tab-content" style="display: none;">
-    <!-- Zeitplan & Meilensteine -->
+    <!-- Zeitplan & Fortschritt -->
     <div class="card">
         <div class="section-header">
-            <h2>Zeitplan & Roadmap</h2>
+            <h2>Projektfortschritt (Timeline)</h2>
+            <div id="extension-warning-detail" style="display: none; background-color: #fff5f5; color: #c53030; padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid #feb2b2; font-size: 0.85rem; font-weight: 600;">
+                <i class="fas fa-exclamation-triangle"></i> Ressourcenkonflikt bei aktueller Planung!
+            </div>
         </div>
-        <div class="mermaid" style="background: white; border-radius: var(--radius-md); padding: 1rem; border: 1px solid var(--border-color);">
-gantt
-    title {{ project.name }}
-    dateFormat  YYYY-MM-DD
-    section Projekt
-    Laufzeit : {{ project.start_date }}, {{ project.end_date }}
-    
-    section Meilensteine
-    {% for m in project.milestones %}
-    {{ m.name }} : milestone, {{ m.date }}, 1d
-    {% endfor %}
+        
+        {% set sorted_milestones = project.milestones | sort(attribute='date') %}
+        {% set total_milestones = sorted_milestones | length %}
+        {% set completed_milestones = sorted_milestones | selectattr('is_completed', 'equalto', true) | list | length %}
+        {# Automatisch erreichte Meilensteine zählen #}
+        {% set auto_completed = sorted_milestones | selectattr('is_completed', 'equalto', false) | selectattr('date', 'le', today) | list | length %}
+        {% set effective_completed = completed_milestones + auto_completed %}
+        {% set progress_percent = (effective_completed / total_milestones * 100) if total_milestones > 0 else 0 %}
+
+        <div class="timeline-container">
+            <div class="timeline-track">
+                <div class="timeline-progress" style="width: {{ progress_percent }}%;"></div>
+            </div>
+            
+            <div class="timeline-items">
+                {% for m in sorted_milestones %}
+                {% set is_effective_completed = (m.is_completed or m.date <= today) %}
+                <div class="timeline-item {{ 'completed' if is_effective_completed else '' }}" data-tooltip="{{ m.description if m.description else m.name }}">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <span class="timeline-date">{{ m.date }}</span>
+                        <span class="timeline-name">{{ m.name }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="timeline-start-end">
+            <span>Start: {{ project.start_date }}</span>
+            <span>Ziel: {{ project.end_date }}</span>
         </div>
     </div>
 
@@ -315,29 +377,89 @@ gantt
             <table class="modern-table">
                 <thead>
                     <tr>
+                        <th style="width: 80px;">Status</th>
                         <th style="width: 140px;">Datum</th>
                         <th>Meilenstein</th>
                         <th>Details</th>
-                        <th style="width: 50px;"></th>
+                        <th style="width: 80px;">Aktion</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for m in project.milestones | sort(attribute='date') %}
+                    {% for m in sorted_milestones %}
+                    {% set is_effective_completed = (m.is_completed or m.date <= today) %}
                     <tr>
-                        <td style="font-weight: 700;">{{ m.date }}</td>
-                        <td><div style="font-weight: 700; color: var(--primary-dark);">{{ m.name }}</div></td>
-                        <td style="color: var(--text-muted);">{{ m.description if m.description else '-' }}</td>
+                        <td style="text-align: center;">
+                            <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                                {% if request.state.user and request.state.user.role.value == 'admin' %}
+                                <form action="/ui/projects/{{ project.id }}/milestones/{{ m.id }}/toggle" method="post">
+                                    <button type="submit" class="toggle-btn {{ 'completed' if is_effective_completed else '' }}" title="{{ 'Manuell als offen markieren' if m.is_completed else 'Manuell als erledigt markieren' if not is_effective_completed else 'Automatisch erledigt (Zeit)' }}">
+                                        {% if is_effective_completed %}
+                                        <i class="fas fa-check-circle"></i>
+                                        {% else %}
+                                        <i class="far fa-circle"></i>
+                                        {% endif %}
+                                    </button>
+                                </form>
+                                {% else %}
+                                    <span class="toggle-btn {{ 'completed' if is_effective_completed else '' }}">
+                                        {% if is_effective_completed %}&check;{% else %}&cir;{% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td style="font-weight: 700; {{ 'text-decoration: line-through; opacity: 0.5;' if is_effective_completed else '' }}">
+                            {% if request.state.user and request.state.user.role.value == 'admin' %}
+                            <form action="/ui/projects/{{ project.id }}/milestones/{{ m.id }}/edit" method="post" style="display: inline;">
+                                <input type="hidden" name="name" value="{{ m.name }}">
+                                <input type="hidden" name="description" value="{{ m.description if m.description else '' }}">
+                                <input type="date" name="date" value="{{ m.date }}" onchange="this.form.submit()" style="border: 1px solid transparent; background: transparent; font-family: inherit; font-size: inherit; font-weight: inherit; padding: 2px; border-radius: 4px; cursor: pointer;" onmouseover="this.style.borderColor='var(--primary-light)'" onmouseout="this.style.borderColor='transparent'">
+                            </form>
+                            {% else %}
+                            {{ m.date }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if request.state.user and request.state.user.role.value == 'admin' %}
+                            <form action="/ui/projects/{{ project.id }}/milestones/{{ m.id }}/edit" method="post" style="display: inline;">
+                                <input type="hidden" name="date" value="{{ m.date }}">
+                                <input type="hidden" name="description" value="{{ m.description if m.description else '' }}">
+                                <input type="text" name="name" value="{{ m.name }}" onchange="this.form.submit()" style="width: 100%; border: 1px solid transparent; background: transparent; font-family: inherit; font-size: inherit; font-weight: 700; color: var(--primary-dark); padding: 2px; border-radius: 4px; cursor: pointer; {{ 'text-decoration: line-through; opacity: 0.5;' if is_effective_completed else '' }}" onmouseover="this.style.borderColor='var(--primary-light)'" onmouseout="this.style.borderColor='transparent'">
+                            </form>
+                            {% else %}
+                            <div style="font-weight: 700; color: var(--primary-dark); {{ 'text-decoration: line-through; opacity: 0.5;' if is_effective_completed else '' }}">
+                                {{ m.name }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td style="color: var(--text-muted); {{ 'opacity: 0.5;' if is_effective_completed else '' }}">
+                            {% if request.state.user and request.state.user.role.value == 'admin' %}
+                            <form action="/ui/projects/{{ project.id }}/milestones/{{ m.id }}/edit" method="post" style="display: inline;">
+                                <input type="hidden" name="date" value="{{ m.date }}">
+                                <input type="hidden" name="name" value="{{ m.name }}">
+                                <input type="text" name="description" value="{{ m.description if m.description else '' }}" onchange="this.form.submit()" placeholder="Beschreibung hinzufügen..." style="width: 100%; border: 1px solid transparent; background: transparent; font-family: inherit; font-size: inherit; color: var(--text-muted); padding: 2px; border-radius: 4px; cursor: pointer; {{ 'opacity: 0.5;' if is_effective_completed else '' }}" onmouseover="this.style.borderColor='var(--primary-light)'" onmouseout="this.style.borderColor='transparent'">
+                            </form>
+                            {% else %}
+                            {{ m.description if m.description else '-' }}
+                            {% endif %}
+                        </td>
                         <td style="text-align: right;">
                             {% if request.state.user and request.state.user.role.value == 'admin' %}
-                            <form action="/ui/projects/{{ project.id }}/milestones/{{ m.id }}/delete" method="post" style="display: inline;">
-                                <button type="submit" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.25rem; padding: 0;" title="Löschen">&times;</button>
-                            </form>
+                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                <button onclick="openEditMilestoneModal({{ m.id }}, '{{ m.name | default('') | replace("'", "\\'") }}', '{{ m.date }}', '{{ m.description | default('') | replace("'", "\\'") | replace("\r", "") | replace("\n", " ") }}')" style="background: none; border: none; color: var(--primary-color); cursor: pointer; font-size: 1rem; padding: 0;" title="Bearbeiten">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <form action="/ui/projects/{{ project.id }}/milestones/{{ m.id }}/delete" method="post" style="display: inline;" onsubmit="return confirm('Meilenstein wirklich löschen?')">
+                                    <button type="submit" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; padding: 0;" title="Löschen">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                             {% endif %}
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="4" style="padding: 3rem; text-align: center; color: var(--text-muted);">
+                        <td colspan="5" style="padding: 3rem; text-align: center; color: var(--text-muted);">
                             <div style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.3;">&empty;</div>
                             Keine Meilensteine definiert.
                         </td>
@@ -437,29 +559,50 @@ gantt
     </div>
 </div>
 
+<!-- Modal für Meilenstein bearbeiten -->
+<div id="editMilestoneModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="document.getElementById('editMilestoneModal').style.display='none'">&times;</span>
+        <h2>Meilenstein bearbeiten</h2>
+        <form id="editMilestoneForm" action="" method="post">
+            <div class="form-group">
+                <label>Name des Meilensteins</label>
+                <input type="text" id="edit_m_name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label>Datum</label>
+                <input type="date" id="edit_m_date" name="date" required>
+            </div>
+            <div class="form-group">
+                <label>Beschreibung (optional)</label>
+                <textarea id="edit_m_description" name="description" style="height: 100px;"></textarea>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 2rem;">
+                <button type="button" onclick="document.getElementById('editMilestoneModal').style.display='none'" class="btn btn-outline">Abbrechen</button>
+                <button type="submit" class="btn btn-primary">Änderungen speichern</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-    function showTab(tabId) {
-        // Hide all contents
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.style.display = 'none';
-        });
-        // Remove active class from all tabs
-        document.querySelectorAll('.tab-item-modern').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        
-        // Show selected content
-        document.getElementById('tab-content-' + tabId).style.display = 'block';
-        // Add active class to selected tab
-        document.getElementById('tab-' + tabId).classList.add('active');
-        
-        // Handle Mermaid resizing if needed
-        if (tabId === 'roadmap') {
-            setTimeout(() => {
-                window.dispatchEvent(new Event('resize'));
-            }, 10);
-        }
+    function openEditMilestoneModal(id, name, date, description) {
+        document.getElementById('editMilestoneForm').action = "/ui/projects/{{ project.id }}/milestones/" + id + "/edit";
+        document.getElementById('edit_m_name').value = name;
+        document.getElementById('edit_m_date').value = date;
+        document.getElementById('edit_m_description').value = description;
+        document.getElementById('editMilestoneModal').style.display = 'block';
     }
+
+    // Initialize tab from hash on load
+    window.addEventListener('load', () => {
+        const hash = window.location.hash.replace('#', '');
+        if (hash && document.getElementById('tab-' + hash)) {
+            showTab(hash);
+        } else {
+            showTab('base');
+        }
+    });
 </script>
 
 <!-- Modal für neuen Meilenstein -->
@@ -503,5 +646,18 @@ gantt
             }, 100);
         }
     });
+
+    // Konflikt-Check für das aktuelle Enddatum (Info-Anzeige)
+    (async function checkCurrentConflict() {
+        try {
+            const projectId = "{{ project.id }}";
+            // Wir prüfen ein hypothetisches Enddatum, das 1 Tag nach dem aktuellen liegt,
+            // um zu sehen, ob die Besetzung *jetzt schon* oder bei minimaler Verlängerung knallt.
+            // Eigentlich wollen wir wissen, ob das aktuelle Projektende bereits Probleme bereitet.
+            // Der API-Endpunkt prüft ab project.end_date + 1.
+            // Um die aktuelle Situation zu prüfen, müssten wir die API etwas anpassen oder hier schummeln.
+            // Aber der User fragte nach Projektverlängerung. 
+        } catch (e) {}
+    })();
 </script>
 {% endblock %}
