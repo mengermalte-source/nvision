@@ -8,7 +8,7 @@
     </div>
 
     <div class="card">
-        <div class="tabs" style="display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem;">
+        <div class="tabs" style="display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 2rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                 <div style="display: flex;">
                     <a href="/ui/pab?{% if show_approved %}show_approved=true{% endif %}" class="tab-item {% if not selected_division %}active{% endif %}" style="padding: 0.75rem 1rem; text-decoration: none; color: var(--text-muted); border-bottom: 2px solid transparent;">Alle</a>
@@ -32,6 +32,197 @@
                 border-bottom-color: var(--primary) !important;
                 font-weight: 600;
             }
+            
+            .pab-container {
+                max-width: 1300px;
+                margin: 0 auto;
+                padding: 1rem;
+            }
+            .pab-card {
+                background: white;
+                border-radius: var(--radius-lg);
+                box-shadow: var(--card-shadow);
+                margin-bottom: 1rem;
+                overflow: hidden;
+                border: 1px solid var(--border-color);
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+            .pab-card:hover {
+                box-shadow: var(--card-shadow-hover);
+            }
+            .pab-card.sortable-chosen {
+                opacity: 0.5;
+                background: var(--primary-light);
+            }
+            .pab-card.sortable-ghost {
+                visibility: hidden;
+            }
+            .pab-row {
+                display: grid;
+                grid-template-columns: 40px 60px 2fr 1.5fr 300px 200px;
+                align-items: center;
+                padding: 0.75rem 1rem;
+                gap: 1rem;
+            }
+            .pab-rank {
+                font-size: 1.5rem;
+                font-weight: 800;
+                color: var(--text-muted);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .pab-info h4 {
+                margin: 0;
+                font-size: 1.1rem;
+                font-weight: 700;
+            }
+            .pab-info p {
+                margin: 0;
+                font-size: 0.85rem;
+                color: var(--text-muted);
+            }
+            .pab-stats {
+                font-size: 0.9rem;
+                color: var(--text-color);
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.75rem;
+            }
+            .workflow-steps {
+                display: flex;
+                justify-content: space-between;
+                position: relative;
+                padding: 0 20px;
+                margin-top: 5px;
+            }
+            .workflow-steps::before {
+                content: "";
+                position: absolute;
+                top: 10px;
+                left: 30px;
+                right: 30px;
+                height: 2px;
+                background: #e2e8f0;
+                z-index: 1;
+            }
+            .step {
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: white;
+                border: 2px solid #e2e8f0;
+                z-index: 2;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.6rem;
+                font-weight: bold;
+                color: #94a3b8;
+                position: relative;
+            }
+            .step.active {
+                border-color: var(--primary);
+                color: var(--primary);
+                background: var(--primary-light);
+            }
+            .step.completed {
+                background: var(--primary);
+                border-color: var(--primary);
+                color: white;
+            }
+            .step.revision {
+                background: var(--danger);
+                border-color: var(--danger);
+                color: white;
+            }
+            .step-label {
+                position: absolute;
+                top: 24px;
+                font-size: 0.6rem;
+                white-space: nowrap;
+                text-align: center;
+                width: 70px;
+                left: 50%;
+                transform: translateX(-50%);
+                color: var(--text-muted);
+            }
+            .step.active .step-label {
+                color: var(--primary);
+                font-weight: 600;
+            }
+            .pab-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 0.5rem;
+            }
+            .drag-handle {
+                cursor: grab;
+                color: #cbd5e1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .drag-handle:active { cursor: grabbing; }
+
+            .btn-workflow {
+                padding: 0.4rem 0.75rem;
+                border-radius: var(--radius-md);
+                font-weight: 600;
+                font-size: 0.8rem;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.4rem;
+                border: 1px solid transparent;
+                cursor: pointer;
+                transition: all 0.2s;
+                text-decoration: none;
+            }
+            .btn-workflow-primary { background: var(--primary); color: white; }
+            .btn-workflow-primary:hover { background: var(--primary-hover); }
+            .btn-workflow-outline { background: white; border-color: var(--border-color); color: var(--text-color); }
+            .btn-workflow-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+            .btn-workflow-warning { background: #fffbeb; color: #92400e; border-color: #fcd34d; }
+            .btn-workflow-warning:hover { background: #fef3c7; }
+            .btn-workflow-danger { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+            .btn-workflow-danger:hover { background: #fee2e2; }
+
+            .comment-notification-dot {
+                position: absolute;
+                top: -3px;
+                right: -3px;
+                width: 10px;
+                height: 10px;
+                background: var(--danger);
+                border-radius: 50%;
+                border: 2px solid white;
+            }
+            .stat-item {
+                display: flex;
+                align-items: center;
+                gap: 0.35rem;
+                background: #f1f5f9;
+                padding: 0.2rem 0.5rem;
+                border-radius: var(--radius-sm);
+                font-size: 0.8rem;
+            }
+            .stat-label { color: var(--text-muted); font-weight: 500; }
+            .stat-value { font-weight: 600; }
+
+            .workflow-container {
+                padding: 0.5rem 0;
+            }
+            .status-badge-cell {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            @media (max-width: 1200px) {
+                .pab-row {
+                    grid-template-columns: 40px 60px 1.5fr 1fr 200px;
+                }
+                .status-badge-cell { display: none; }
+            }
         </style>
 
         <script>
@@ -46,93 +237,107 @@
         }
         </script>
 
-        <div class="table-responsive">
-            <table class="table table-hover" id="pab-table">
-                <thead>
-                    <tr>
+        <div class="pab-list-container" id="pab-sortable">
+            {% for p in projects %}
+            <div class="pab-card" data-id="{{ p.id }}">
+                <div class="pab-row">
+                    <!-- 1. Handle -->
+                    <div class="drag-handle">
                         {% if request.state.user.role.name == 'ADMIN' %}
-                        <th style="width: 40px;"></th>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="9" x2="15" y1="12" y2="12"/><line x1="9" x2="15" y1="6" y2="6"/><line x1="9" x2="15" y1="18" y2="18"/></svg>
                         {% endif %}
-                        <th style="width: 60px;">Rang</th>
-                        <th>Maßnahme</th>
-                        <th>IT-Verantw.</th>
-                        <th>Score</th>
-                        <th>PT (Int/Ext)</th>
-                        <th>Status</th>
-                        <th class="text-right">Aktionen</th>
-                    </tr>
-                </thead>
-                <tbody id="pab-sortable">
-                    {% for p in projects %}
-                    <tr data-id="{{ p.id }}">
-                        {% if request.state.user.role.name == 'ADMIN' %}
-                        <td class="drag-handle">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="9" x2="15" y1="12" y2="12"/><line x1="9" x2="15" y1="6" y2="6"/><line x1="9" x2="15" y1="18" y2="18"/></svg>
-                        </td>
-                        {% endif %}
-                        <td class="rank-number">#{{ loop.index }}</td>
-                        <td>
-                            <div class="project-name-cell">
-                                <a href="/ui/projects/{{ p.id }}" class="font-bold">{{ p.name }}</a>
-                                <small class="text-muted block">{{ p.internal_number }}</small>
-                            </div>
-                        </td>
-                        <td>{{ p.responsible_it or '-' }}</td>
-                        <td><span class="badge badge-info">{{ "%.1f"|format(p.economic_score) }}</span></td>
-                        <td>{{ p.pt_intern_planned|int }} / {{ p.pt_extern_planned|int }}</td>
-                        <td>
-                            {% if p.pab_status.value == 'evaluation' %}
-                                <span class="badge status-planning">Evaluierung</span>
-                            {% elif p.pab_status.value == 'revision' %}
-                                <span class="badge status-on-hold">Nachbesserung</span>
-                            {% elif p.pab_status.value == 'confirmed' %}
-                                <span class="badge status-active">IT-Bestätigt</span>
-                            {% elif p.pab_status.value == 'approved' %}
-                                <span class="badge status-completed">PAB Freigegeben</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-right">
-                            <div class="btn-group">
-                                {% set unread_count = p.pab_comments | selectattr('is_read', 'equalto', false) | selectattr('author_id', 'ne', request.state.user.id) | list | length %}
-                                <button class="btn btn-small btn-secondary pab-comment-btn" data-project-id="{{ p.id }}" title="Feedback" style="position: relative;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                                    {% if unread_count > 0 %}
-                                    <span class="comment-notification-dot"></span>
-                                    {% endif %}
-                                </button>
-                                
-                                {% if p.pab_status.value == 'evaluation' or p.pab_status.value == 'revision' or (p.pab_status.value == 'approved' and request.state.user.role.name == 'ADMIN') %}
-                                {% if request.state.user.role.name == 'ADMIN' or p.responsible_it == request.state.user.username %}
-                                    <form action="/ui/pab/{{ p.id }}/status" method="POST" style="display:inline;">
-                                        <input type="hidden" name="new_status" value="confirmed">
-                                        <button type="submit" class="btn btn-small btn-success" title="IT-Bestätigung geben">Bestätigen</button>
-                                    </form>
-                                    {% endif %}
-                                {% endif %}
+                    </div>
 
-                                {% if request.state.user.role.name == 'ADMIN' %}
-                                    {% if p.pab_status.value != 'revision' and p.pab_status.value != 'approved' %}
-                                    <button class="btn btn-small btn-warning pab-revision-btn" data-project-id="{{ p.id }}" title="Rückfrage stellen">Rückfrage</button>
-                                    {% endif %}
-                                    
-                                    {% if p.pab_status.value == 'confirmed' %}
-                                    <form action="/ui/pab/{{ p.id }}/status" method="POST" style="display:inline;">
-                                        <input type="hidden" name="new_status" value="approved">
-                                        <button type="submit" class="btn btn-small btn-primary" title="Final freigeben">PAB-Freigabe</button>
-                                    </form>
-                                    {% elif p.pab_status.value == 'approved' %}
-                                    <form action="/ui/pab/{{ p.id }}/status" method="POST" style="display:inline;">
-                                        <input type="hidden" name="new_status" value="evaluation">
-                                        <button type="submit" class="btn btn-small btn-secondary" title="Freigabe zurücknehmen">Reset</button>
-                                    </form>
-                                    {% endif %}
-                                {% endif %}
+                    <!-- 2. Rank -->
+                    <div class="pab-rank rank-number">#{{ loop.index }}</div>
+
+                    <!-- 3. Info -->
+                    <div class="pab-info">
+                        <h4><a href="/ui/projects/{{ p.id }}" style="text-decoration: none; color: inherit;">{{ p.name }}</a></h4>
+                        <p>{{ p.internal_number }} • {{ p.responsible_it or 'Kein IT-Verantw.' }}</p>
+                        <div class="pab-stats" style="margin-top: 0.5rem;">
+                            <div class="stat-item">
+                                <span class="stat-label">Score:</span>
+                                <span class="stat-value">{{ "%.1f"|format(p.economic_score) }}</span>
                             </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            <div class="stat-item">
+                                <span class="stat-label">PT Int/Ext:</span>
+                                <span class="stat-value">{{ p.pt_intern_planned|int }} / {{ p.pt_extern_planned|int }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Workflow -->
+                    <div class="workflow-container">
+                        <div class="workflow-steps">
+                            <div class="step {% if p.pab_status.value != 'evaluation' %}completed{% else %}active{% endif %}">
+                                1 <div class="step-label">Draft</div>
+                            </div>
+                            <div class="step {% if p.pab_status.value == 'revision' %}revision{% elif p.pab_status.value in ['confirmed', 'approved'] %}completed{% elif p.pab_status.value == 'evaluation' %}active{% endif %}">
+                                2 <div class="step-label">Review</div>
+                            </div>
+                            <div class="step {% if p.pab_status.value == 'approved' %}completed{% elif p.pab_status.value == 'confirmed' %}active{% endif %}">
+                                3 <div class="step-label">IT-Conf</div>
+                            </div>
+                            <div class="step {% if p.pab_status.value == 'approved' %}completed{% endif %}">
+                                4 <div class="step-label">Final</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Status Text (Optional but good for clarity) -->
+                    <div class="status-badge-cell" style="text-align: center;">
+                        {% if p.pab_status.value == 'evaluation' %}
+                            <span class="badge status-planning">Evaluierung</span>
+                        {% elif p.pab_status.value == 'revision' %}
+                            <span class="badge status-on-hold">Nachbesserung</span>
+                        {% elif p.pab_status.value == 'confirmed' %}
+                            <span class="badge status-active">IT-Bestätigt</span>
+                        {% elif p.pab_status.value == 'approved' %}
+                            <span class="badge status-completed">PAB Freigegeben</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- 6. Actions -->
+                    <div class="pab-actions">
+                        {% set unread_count = p.pab_comments | selectattr('is_read', 'equalto', false) | selectattr('author_id', 'ne', request.state.user.id) | list | length %}
+                        <button class="btn-workflow btn-workflow-outline pab-comment-btn" data-project-id="{{ p.id }}" style="position: relative;" title="Feedback/Verlauf">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            {% if unread_count > 0 %}
+                            <span class="comment-notification-dot"></span>
+                            {% endif %}
+                        </button>
+
+                        {% if p.pab_status.value == 'evaluation' or p.pab_status.value == 'revision' or (p.pab_status.value == 'approved' and request.state.user.role.name == 'ADMIN') %}
+                            {% if request.state.user.role.name == 'ADMIN' or p.responsible_it == request.state.user.username %}
+                            <form action="/ui/pab/{{ p.id }}/status" method="POST" style="display:inline;">
+                                <input type="hidden" name="new_status" value="confirmed">
+                                <button type="submit" class="btn-workflow btn-workflow-primary" title="Daten bestätigen">Bestätigen</button>
+                            </form>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if request.state.user.role.name == 'ADMIN' %}
+                            {% if p.pab_status.value != 'revision' and p.pab_status.value != 'approved' %}
+                            <button class="btn-workflow btn-workflow-warning pab-revision-btn" data-project-id="{{ p.id }}">Rückfrage</button>
+                            {% endif %}
+                            
+                            {% if p.pab_status.value == 'confirmed' %}
+                            <form action="/ui/pab/{{ p.id }}/status" method="POST" style="display:inline;">
+                                <input type="hidden" name="new_status" value="approved">
+                                <button type="submit" class="btn-workflow btn-workflow-primary" style="background: var(--info);">Freigabe</button>
+                            </form>
+                            {% elif p.pab_status.value == 'approved' %}
+                            <form action="/ui/pab/{{ p.id }}/status" method="POST" style="display:inline;">
+                                <input type="hidden" name="new_status" value="evaluation">
+                                <button type="submit" class="btn-workflow btn-workflow-danger">Reset</button>
+                            </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
@@ -146,7 +351,7 @@
                 <button class="close-modal" onclick="closeModals()">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="comment-feed">
+                <div class="comment-feed" style="max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
                     {% for c in p.pab_comments | sort(attribute='created_at') %}
                     <div class="comment-item" style="margin-bottom: 1rem; padding: 0.5rem; border-radius: 4px; background: #f1f5f9;">
                         <div class="comment-meta" style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.25rem;">
@@ -226,14 +431,14 @@
     });
 
     function updateRanks() {
-        const rows = document.querySelectorAll('#pab-sortable tr');
+        const rows = document.querySelectorAll('#pab-sortable .pab-card');
         rows.forEach((row, index) => {
             row.querySelector('.rank-number').textContent = '#' + (index + 1);
         });
     }
 
     function saveRanks() {
-        const rows = document.querySelectorAll('#pab-sortable tr');
+        const rows = document.querySelectorAll('#pab-sortable .pab-card');
         const ids = Array.from(rows).map(row => parseInt(row.dataset.id));
         
         fetch('/ui/pab/reorder', {
